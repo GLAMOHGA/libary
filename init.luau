@@ -1,7 +1,8 @@
--- init.luau
--- Night UI Library — публичная точка входа
+local BASE_URL = "https://raw.githubusercontent.com/GLAMOHGA/libary/v1.0.0"
 
-local BASE_URL = "https://raw.githubusercontent.com/GLAMOHGA/libary/refs/heads/main"
+if getgenv().Night and getgenv().Night.__Library then
+    return getgenv().Night.__Library
+end
 
 local Night = getgenv().Night or {}
 Night.Scale         = Night.Scale or 1
@@ -13,6 +14,7 @@ Night.IgnoreConfigs = Night.IgnoreConfigs or {}
 Night.Connections   = Night.Connections or {}
 Night.Load          = Night.Load or { Loaded = false }
 Night.Init          = Night.Init or {}
+Night.Version       = "1.0.0"
 
 getgenv().Night = Night
 
@@ -21,15 +23,13 @@ local ok, err = pcall(function()
 end)
 
 if not ok then
-    warn("[Night] Не удалось загрузить main.luau: " .. tostring(err))
-    return nil
+    error("[Night] Failed to load core: " .. tostring(err), 0)
 end
 
 task.wait(0.2)
 
 if not Night.Assets or not Night.Assets.Functions then
-    warn("[Night] main.luau не выставил Night.Assets.Functions")
-    return nil
+    error("[Night] Core did not expose Assets.Functions", 0)
 end
 
 local Fn = Night.Assets.Functions
@@ -37,7 +37,9 @@ local Fn = Night.Assets.Functions
 local Library = {}
 Library.__index = Library
 
-Library.Version = "1.0.0"
+Library.Version = Night.Version
+Library.License = "MIT"
+Library.Author  = "GLAMOHGA"
 Library.Night   = Night
 
 function Library:Window(Data)
@@ -50,7 +52,7 @@ end
 
 function Library:CreateTab(Data)
     Data = Data or {}
-    assert(Data.Name, "[Night] CreateTab: поле Name обязательно")
+    assert(type(Data.Name) == "string", "[Night] CreateTab: Name is required")
     Data.Flag = Data.Flag or (Data.Name:gsub("%s+", "_") .. "_" .. tostring(math.random(1000, 9999)))
     Data.Icon = Data.Icon or "Utility"
 
@@ -77,5 +79,11 @@ function Library:Uninject()
         Fn.Uninject()
     end
 end
+
+function Library:GetVersion()
+    return Library.Version
+end
+
+Night.__Library = Library
 
 return Library
