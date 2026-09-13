@@ -1,4 +1,4 @@
-local BASE_URL = "https://raw.githubusercontent.com/GLAMOHGA/libary/v1.0.0"
+local BASE_URL = "https://raw.githubusercontent.com/GLAMOHGA/libary/refs/heads/main"
 
 if getgenv().Night and getgenv().Night.__Library then
     return getgenv().Night.__Library
