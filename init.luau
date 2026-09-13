@@ -18,7 +18,7 @@ Night.Init          = Night.Init or {}
 
 getgenv().Night = Night
 
--- 2. Грузим внутренний main.luau (он заполнит Night.Assets, Night.MainWindow и т.д.)
+-- 2. Грузим внутренний main.luau
 local ok, err = pcall(function()
     loadstring(game:HttpGet(BASE_URL .. "/main.luau"))()
 end)
@@ -28,32 +28,44 @@ if not ok then
     return nil
 end
 
-task.wait(0.1) -- даём main.luau доинициализироваться
+task.wait(0.2) -- даём main.luau доинициализироваться
 
--- 3. Собираем фасад — то, что получит юзер
+if not Night.Assets or not Night.Assets.Functions then
+    warn("[Night] main.luau не выставил Night.Assets.Functions")
+    return nil
+end
+
+local Fn = Night.Assets.Functions
+
+-- 3. Фасад
 local Library = {}
 Library.__index = Library
 
 Library.Version = "1.0.0"
 Library.Night   = Night
 
--- Создать окно
+-- Окно = MainWindow из main.luau
 function Library:Window(Data)
     Data = Data or {}
     Data.Name    = Data.Name or "Night"
     Data.SubName = Data.SubName or ""
 
+    -- main.luau уже создал MainWindow; можно поменять имя, если хочешь
+    if Night.MainWindow and Night.MainWindow.Functions and Night.MainWindow.Functions.ChangeText then
+        Night.MainWindow:ChangeText({ Text = Data.Name })
+    end
+
     return Night.MainWindow
 end
 
--- Создать вкладку
+-- Вкладка = Assets.Functions:CreateTab
 function Library:CreateTab(Data)
     Data = Data or {}
     assert(Data.Name, "[Night] CreateTab: поле Name обязательно")
     Data.Flag = Data.Flag or (Data.Name:gsub("%s+", "_") .. "_" .. tostring(math.random(1000, 9999)))
     Data.Icon = Data.Icon or "Utility"
 
-    return Night.CreateTab({
+    return Fn:CreateTab({
         Name  = Data.Name,
         Flag  = Data.Flag,
         Icon  = Data.Icon,
@@ -61,14 +73,14 @@ function Library:CreateTab(Data)
     })
 end
 
--- Уведомление
+-- Уведомление = Assets.Functions:CreateNotification
 function Library:Notification(Data)
     Data = Data or {}
     Data.Title       = Data.Title or "Night"
     Data.Description = Data.Description or ""
     Data.Duration    = Data.Duration or 3
 
-    return Night.CreateNotification({
+    return Fn:CreateNotification({
         Title       = Data.Title,
         Description = Data.Description,
         Duration    = Data.Duration,
@@ -76,10 +88,10 @@ function Library:Notification(Data)
     })
 end
 
--- Выгрузить библиотеку
+-- Выгрузка = Assets.Functions:Uninject
 function Library:Uninject()
-    if Night.Uninject then
-        Night.Uninject()
+    if Fn.Uninject then
+        Fn.Uninject()
     end
 end
 
