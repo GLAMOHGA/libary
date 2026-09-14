@@ -1,28 +1,31 @@
-local Night: {[string]: any} = getgenv().Night
+local Night = getgenv().Night
 
-if not Night then
-    Night = {
-        Version = "3.17",
-        Scale = 0.8,
-        Keybind = Enum.KeyCode.RightShift,
-        Game = game.PlaceId,
-        Mobile = false,
-        Init = {},
-        Connections = {},
-        CurrentConfig = {},
-        IgnoreConfigs = {},
-        OnUninject = Instance.new("BindableEvent"),
-        Load = {Start = os.clock(), Time = 0, Loaded = false, LoadTips = {}},
-        Directories = {
-            "NewNight",
-            "NewNight/Configs",
-            "NewNight/Assets",
-            "NewNight/Assets/Fonts",
-            "NewNight/Assets/Icons",
-        },
-    }
-    getgenv().Night = Night
+if type(Night) ~= "table" then
+    Night = {}
 end
+
+Night.Version = Night.Version or "3.17"
+Night.Scale = Night.Scale or 0.8
+Night.Keybind = Night.Keybind or Enum.KeyCode.RightShift
+Night.Game = Night.Game or game.PlaceId
+Night.Mobile = Night.Mobile or false
+Night.Init = Night.Init or {}
+Night.Connections = Night.Connections or {}
+Night.CurrentConfig = Night.CurrentConfig or {}
+Night.IgnoreConfigs = Night.IgnoreConfigs or {}
+Night.OnUninject = Night.OnUninject or Instance.new("BindableEvent")
+Night.Load = Night.Load or {Start = os.clock(), Time = 0, Loaded = false, LoadTips = {}}
+Night.Load.Loaded = false
+Night.Load.Start = os.clock()
+Night.Directories = Night.Directories or {
+    "NewNight",
+    "NewNight/Configs",
+    "NewNight/Assets",
+    "NewNight/Assets/Fonts",
+    "NewNight/Assets/Icons",
+}
+
+getgenv().Night = Night
 
 for _, v in Night.Directories do
     if isfolder and makefolder and not isfolder(v) then
@@ -30,7 +33,32 @@ for _, v in Night.Directories do
     end
 end
 
-Night.CurrentConfig = Night.CurrentConfig or {}
+local DefaultConfig = {
+    ConfigName = "Default",
+    Modules = {},
+    Sliders = {},
+    ColorSliders = {},
+    Dropdowns = {},
+    TextBoxes = {},
+    Keybinds = {},
+    MiniToggles = {},
+    Others = {
+        MobileButtonPosition = {},
+        TabData = {}
+    }
+}
+
+local function DeepClone(Clone)
+    local RealClone = table.clone(Clone)
+    for i, v in RealClone do
+        if typeof(v) == "table" then
+            RealClone[i] = DeepClone(v)
+        end
+    end
+    return RealClone
+end
+
+Night.CurrentConfig = DeepClone(DefaultConfig)
 
 local Players : Players = cloneref(game:GetService("Players"))
 local TweenService : TweenService = cloneref(game:GetService("TweenService"))
