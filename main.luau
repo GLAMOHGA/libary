@@ -1,4 +1,5 @@
 local Night: {[string]: any} = getgenv().Night
+
 local DefaultConfig: {[string]: any} = {
     ConfigName = "Default",
     Modules = {},
@@ -21,11 +22,11 @@ local function DeepClone(Clone: {[any]: any})
             RealClone[i] = DeepClone(v)
         end
     end
-
     return RealClone
 end
 
 Night.CurrentConfig = DeepClone(DefaultConfig)
+
 local cloneref = cloneref or function(Reference: Instance): Instance
     return Reference
 end
@@ -37,7 +38,6 @@ local Workspace : Workspace = cloneref(game:GetService("Workspace"))
 local UserInputService : UserInputService = cloneref(game:GetService("UserInputService"))
 local TextService: TextService = cloneref(game:GetService("TextService"))
 
-local RequestFunc = (request or http and http.request)
 local Camera: Camera = Workspace.CurrentCamera
 local LocalPlayer : Player = Players.LocalPlayer
 
@@ -80,8 +80,7 @@ local UIData = {
         Combat = "rbxassetid://104133331585248" :: string,
         Movement = "rbxassetid://121899433518557" :: string,
         Render = "rbxassetid://127386420152841" :: string,
-        Utility = "rbxassetid://110186208471082" :: string,
-        Premium = "rbxassetid://94522713973114" :: string
+        Utility = "rbxassetid://110186208471082" :: string
     },
     Fonts = {
         BuilderExtended = {Checked = false, Font = "rbxassetid://16658237174"},
@@ -100,6 +99,19 @@ Night.Assets = Assets
 local UIScale: UIScale = Instance.new("UIScale")
 UIScale.Scale = Night.Scale
 
+if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then
+    Night.Mobile = true
+    if Camera then
+        if 0.4 >= (Camera.ViewportSize.X / 1000) - 0.1 then
+            Night.Scale = 0.4
+        else
+            Night.Scale = (Camera.ViewportSize.X / 1000) - 0.2
+        end
+    else
+        Night.Scale = 0.5
+    end
+end
+
 do
     Assets.Functions = {}
     Assets.Functions.cloneref = cloneref
@@ -116,182 +128,6 @@ do
         return func
     end
 
-    function Assets.Functions:SearchTable(Search: {}, Value: any, Searched: {}, Results: {})
-        Searched = Searched or {}
-        Results = Results or {}
-
-        for i,v in next, Search do
-            if typeof(v) == "table" then
-                if not table.find(Searched, v) then
-                    table.insert(Searched, v)
-                    Assets.Functions:SearchTable(v, Value, Searched, Results)
-                end
-            else
-                local OldMT = nil
-                if typeof(v) == "userdata" and getrawmetatable and getrawmetatable(v) and setrawmetatable then
-                    OldMT = getrawmetatable(v)
-                    setrawmetatable(v, {})
-                end
-
-                if tostring(v):lower() == Value then
-                    table.insert(Results, v)
-                else
-                    if OldMT then
-                        setrawmetatable(v, OldMT)
-                    end
-                end
-            end
-
-            if typeof(i) == "table" then
-                if not table.find(Searched, i) then
-                    table.insert(Searched, i)
-                    Assets.Functions:SearchTable(i, Value, Searched, Results)
-                end
-            else
-                local OldMT = nil
-                if typeof(i) == "userdata" and getrawmetatable and getrawmetatable(i) and setrawmetatable then
-                    OldMT = getrawmetatable(i)
-                    setrawmetatable(i, {})
-                end
-
-                if tostring(i):lower() == Value then
-                    table.insert(Results, i)
-                else
-                    if OldMT then
-                        setrawmetatable(i, OldMT)
-                    end
-                end
-            end
-        end
-        
-        return Results
-    end
-
-    function Assets.Functions:IsAlive(Player: Player | Model, IsCharacter: boolean?): boolean
-        if (not IsCharacter and Player and Player.Character) or IsCharacter then
-            local Char: Model = Player
-            if not IsCharacter then
-                Char = Char.Character
-            end
-
-            local Humanoid = Char:FindFirstChild("Humanoid") :: Humanoid
-            if Humanoid and (Humanoid:GetState() ~= Enum.HumanoidStateType.Dead or Humanoid.Health > 0.05) then
-                if Char.PrimaryPart then
-                    return true
-                end
-            end
-        end
-
-        return false
-    end
-
-    function Assets.Functions:GetDistanceFrom(Point: Vector3, To: Vector3, IgnoreY: boolean?): number
-        if not IgnoreY then
-            return (Point - To).Magnitude
-        else
-            return (Point - Vector3.new(To.X, Point.Y, To.Z)).Magnitude
-        end
-    end
-
-    function Assets.Functions:GetClosestPlayer(Data: {Player: Player, TeamCheck: boolean?}): { Distance: number, Player: Player? }
-        local RealData = {
-            Player = nil,
-            Distance = math.huge
-        }
-
-        if not Data.Player then
-            Data.Player = LocalPlayer
-        end
-
-        if Assets.Functions:IsAlive(Data.Player) then
-            for i,v : Player in Players:GetPlayers() do
-                if Assets.Functions:IsAlive(v) and v ~= LocalPlayer and (Data.TeamCheck and v.Team and v.Team ~= Data.Player.Team or not v.Team or not Data.TeamCheck) then
-                    local Root: BasePart = v.Character.PrimaryPart
-                    local PlayerRoot: BasePart = Data.Player.Character.PrimaryPart
-
-                    local Distance: number = Assets.Functions:GetDistanceFrom(PlayerRoot.Position, Root.Position)
-                    if RealData.Distance >= Distance then
-                        RealData = {
-                            Player = v,
-                            Distance = Distance
-                        }
-                    end
-                end
-            end
-        end
-
-        return RealData
-    end
-
-    function Assets.Functions:GetNerestPlayerToMouse(Data: {TeamCheck: boolean, Distance: number?, Exclude: {}?, Extras: {}?, Targets: {Players: boolean, Npcs: boolean}?}): { DistanceFromMouse: number, DistanceFromPlayer: number, Player: Player?, Character: Model?}
-        local RealData = {
-            Character = nil,
-            Player = nil,
-            DistanceFromMouse = math.huge,
-            DistanceFromPlayer = math.huge
-        }
-
-        if not Data.Exclude then 
-            Data.Exclude = {}
-        end
-
-        if not Data.Targets then
-            Data.Targets = {
-                Players = true,
-                Npcs = true
-            }
-        end
-
-        if not Data.Distance then
-            Data.Distance = math.huge
-        end
-
-        local AllEntities = {}
-        for i,v in Players:GetPlayers() do
-            table.insert(AllEntities, v.Character)
-        end
-
-        if Data.Extras then
-            for i,v in Data.Extras do
-                table.insert(AllEntities, v)
-            end
-        end
-
-        local Mouse: Mouse = LocalPlayer:GetMouse()
-        if Mouse and Assets.Functions:IsAlive(LocalPlayer) then 
-            for i,v : Model? in AllEntities do
-                if Assets.Functions:IsAlive(v, true) and not table.find(Data.Exclude, v) then
-                    local Player: Player = Players:GetPlayerFromCharacter(v)
-                    if ((Data.Targets.Players and Player) or (Data.Targets.Npcs and not Player)) then
-                        if Player and table.find(Data.Exclude, Player) then
-                            continue
-                        end
-
-                        if Data.TeamCheck and (not Player or not Player.Team or Player.Team == LocalPlayer.Team) then
-                            continue
-                        end
-
-                        local Root: BasePart = v.PrimaryPart
-                        local MousePos: Vector3 = Mouse.Hit.Position
-                        local MouseDistance: number = Assets.Functions:GetDistanceFrom(MousePos, Root.Position)
-                        local PlayerDistance: number = Assets.Functions:GetDistanceFrom(LocalPlayer.Character.PrimaryPart.Position, Root.Position)
-
-                        if RealData.DistanceFromMouse >= MouseDistance and Data.Distance >= MouseDistance then
-                            RealData = {
-                                Character = v,
-                                Player = Player,
-                                DistanceFromMouse = MouseDistance,
-                                DistanceFromPlayer = PlayerDistance
-                            }
-                        end
-                    end
-                end
-            end
-        end
-
-        return RealData
-    end
-
     function Assets.Functions:GetTextBounds(Text: string, Font: Font, Size: number): Vector2
         local Params = Instance.new("GetTextBoundsParams")
         Params.Text = Text
@@ -299,7 +135,7 @@ do
         Params.Size = Size
         Params.Width = 1e9
         Params.RichText = false
-        
+
         return TextService:GetTextBoundsAsync(Params)
     end
 
@@ -307,7 +143,6 @@ do
         local R: number = math.floor(RGB.R * 255)
         local G: number = math.floor(RGB.G * 255)
         local B: number = math.floor(RGB.B * 255)
-
         return {R = R, G = G, B = B}
     end
 
@@ -321,7 +156,7 @@ do
         end
 
         if not icon then
-            if Name:find("rbxasset") or  Name:find("roblox.com") then
+            if Name:find("rbxasset") or Name:find("roblox.com") then
                 icon = Name
             end
         end
@@ -344,7 +179,6 @@ do
                     style = "normal",
                     assetId = getcustomasset(FontPath),
                 }
-
                 table.insert(FontFamily.faces, Face)
             else
                 if Font then
@@ -359,7 +193,6 @@ do
             Checked = true,
             Font = id
         }
-
         return id
     end
 
@@ -431,15 +264,14 @@ do
                 v:Disconnect()
             end
         end
-
         table.clear(Night.Connections)
     end
-   
+
     Assets.Config = {}
     Assets.ArrayList = {}
     function Assets.Config:Save(Data: {}, Path: string, Directories: {}?): boolean
         if not Night.Load.Loaded then return end
-        
+
         local Suc, NewData = pcall(HttpService.JSONEncode, HttpService, Data)
         if not isfolder("NewNight/Configs") then
             makefolder("NewNight/Configs")
@@ -457,7 +289,6 @@ do
             writefile("NewNight/Configs/"..Path..".json", NewData)
             return true
         end
-
         return false
     end
 
@@ -467,11 +298,9 @@ do
             _, NewData = pcall(HttpService.JSONDecode, HttpService, readfile("NewNight/Configs/"..Config..".json"))
         end
 
-
-        -- sigma ud load 💯💯
         for i,v in NewData do
             if Night.CurrentConfig[i] then
-                Night.CurrentConfig[i] = v        
+                Night.CurrentConfig[i] = v
             end
         end
 
@@ -487,7 +316,6 @@ do
                         v.Window.Visible = false
                     end
                 end
-
                 v.Window.Position = v.Data.Position
             end
 
@@ -503,9 +331,6 @@ do
 
                 v2:ToggleSettings(false)
 
-                -- Only disable the module if it needs to actually turn off,
-                -- to avoid the enable→disable→enable cycle that causes
-                -- CallingFunction to fire redundantly and override itself.
                 if not ModuleValue and v2.Enabled then
                     v2:SetValue(false, false, false)
                 end
@@ -536,14 +361,13 @@ do
                                 if Value == nil then
                                     Value = false
                                 end
-                                
+
                                 v4:SetValue(Value, false, true)
                             end
                         end
                     end
                 end
 
-                -- Only set the module value if the state actually needs to change
                 if ModuleValue ~= v2.Enabled then
                     v2:SetValue(ModuleValue, false, false, true)
                 end
@@ -559,7 +383,7 @@ do
                         local Visible = v2.Visible
 
                         if Pos then
-                            Window.Window.Position = UDim2.fromScale(table.unpack(Pos)) 
+                            Window.Window.Position = UDim2.fromScale(table.unpack(Pos))
                         end
 
                         local Button = UIData.DashButtons[i2]
@@ -591,32 +415,31 @@ do
 
         for i,v: {Main: boolean, Gradient: UIGradient} in UIData.CustomizableItems.Modules do
             if v.Main then
-                v.Gradient.Color =  ColorSequence.new({ColorSequenceKeypoint.new(0, UIData.Theme.ModuleTheme[1]), ColorSequenceKeypoint.new(1, UIData.Theme.ModuleTheme[2])})
+                v.Gradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, UIData.Theme.ModuleTheme[1]), ColorSequenceKeypoint.new(1, UIData.Theme.ModuleTheme[2])})
             else
                 local RGB, RGB2 = Assets.Functions:ConvertColor3toInt(UIData.Theme.ModuleTheme[1]), Assets.Functions:ConvertColor3toInt(UIData.Theme.ModuleTheme[2])
                 local Gradients = {
                     [1] = {
-                        math.clamp(RGB.R - 7, 0, 255), 
-                        math.clamp(RGB.G - 24, 0, 255), 
+                        math.clamp(RGB.R - 7, 0, 255),
+                        math.clamp(RGB.G - 24, 0, 255),
                         math.clamp(RGB.B - 46, 0, 255)
                     },
                     [2] = {
-                        math.clamp(RGB2.R - 5, 0, 255), 
-                        math.clamp(RGB2.G - 19, 0, 255), 
+                        math.clamp(RGB2.R - 5, 0, 255),
+                        math.clamp(RGB2.G - 19, 0, 255),
                         math.clamp(RGB2.B - 37, 0, 255)
                     }
                 }
 
-                v.Gradient.Color =  ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(table.unpack(Gradients[1]))), ColorSequenceKeypoint.new(1, Color3.fromRGB(table.unpack(Gradients[2])))})
+                v.Gradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(table.unpack(Gradients[1]))), ColorSequenceKeypoint.new(1, Color3.fromRGB(table.unpack(Gradients[2])))})
                 table.clear(Gradients)
             end
         end
         return true
     end
 
-    function Assets.Functions:LoadFile(Game: string, LoadConfig: boolean?, Premium: boolean?)
+    function Assets.Functions:LoadFile(Game: string, LoadConfig: boolean?)
         local Path: string = "NewNight/Games/"..tostring(Game)..".luau"
-        local PremiumPath: string = "NewNight/Premium/Games/"..tostring(Game)..".luau"
 
         if LoadConfig == nil then
             LoadConfig = true
@@ -626,7 +449,7 @@ do
             if Night.Dev and isfile and isfile(Path) and readfile then
                 loadstring(readfile(Path))()
             else
-                local Success: boolean, Req: string? = pcall(game.HttpGet, game, "https://raw.githubusercontent.com/null-wtf/NewNight/refs/heads/main/Games/"..Game..".luau")
+                local Success: boolean, Req: string? = pcall(game.HttpGet, game, "https://raw.githubusercontent.com/GLAMOHGA/libary/refs/heads/main/Games/"..Game..".luau")
                 if Success and typeof(Req) == "string" and Req ~= "404: Not Found" then
                     loadstring(Req)()
                 end
@@ -638,30 +461,6 @@ do
                 Title = "Failed to load file: "..tostring(Game),
                 Description = "Failed to load file: "..tostring(Game)..": "..err
             })
-        end
-
-        if Night.Premium and Game ~= "Universal" then
-            local suc2: boolean, err2: string? = pcall(function()
-                if Night.Dev and isfile and isfile(PremiumPath) and readfile then
-                    loadstring(readfile(PremiumPath))()
-                else
-                    local Success: boolean, Req: string? = pcall(game.HttpGet, game, "https://raw.githubusercontent.com/null-wtf/NewNight/refs/heads/main/Premium/Games/"..Game..".luau")
-                    if Success and typeof(Req) == "string" and Req ~= "404: Not Found" then
-                        loadstring(Req)()
-                    end
-                end
-            end)
-
-            if not suc2 then
-                if setthreadidentity then
-                    pcall(setthreadidentity, 8)
-                end
-            
-                return Assets.Functions:CreateNotification({
-                    Title = "Failed to load premium file: "..tostring(Game),
-                    Description = "Failed to load premium file: "..tostring(Game)..": "..err2
-                })
-            end
         end
 
         if LoadConfig then
@@ -741,20 +540,20 @@ function Assets.ArrayList:Sort()
     table.sort(UIData.ArrayListEntries, function(a, b)
         local TotalTextA = a.Name
         local TotalTextB = b.Name
-        
+
         local SizeA = Assets.Functions:GetTextBounds(TotalTextA, Assets.ArrayList.Font, Assets.ArrayList.TextSize)
         local SizeB = Assets.Functions:GetTextBounds(TotalTextB, Assets.ArrayList.Font, Assets.ArrayList.TextSize)
 
         return SizeA.X > SizeB.X
     end)
-    
+
     for i,v in UIData.ArrayListEntries do
         if v.Instances.Main then
             if v.Instances.Main.Position.X.Scale > 1 then
                 v.Instances.Main.Position = UDim2.new(v.Instances.Main.Position.X.Scale, 0, 0, (Assets.ArrayList.TextSize + 6) * i)
             end
 
-            TweenService:Create(v.Instances.Main, TweenInfo.new(0.2), {Position =  UDim2.new(1, 0, 0, (Assets.ArrayList.TextSize + 6) * i)}):Play()
+            TweenService:Create(v.Instances.Main, TweenInfo.new(0.2), {Position = UDim2.new(1, 0, 0, (Assets.ArrayList.TextSize + 6) * i)}):Play()
         end
     end
 end
@@ -817,7 +616,7 @@ function Assets.ArrayList:Push(Name: string)
         end
 
         Tween:Play()
-        Tween.Completed:Once(function() 
+        Tween.Completed:Once(function()
             MainFrame:Destroy(MainFrame)
         end)
 
@@ -850,7 +649,6 @@ function Assets.Functions:Uninject()
 end
 
 local function CreateShadow(Obj: Instance): ImageLabel
-    -- ima js do ts instead of pasting it 10 times
     local Shadow: ImageLabel = Instance.new("ImageLabel", Obj)
     Shadow.AnchorPoint = Vector2.new(0.5, 0.5)
     Shadow.BackgroundTransparency = 1
@@ -914,7 +712,6 @@ function Assets.Functions:CreateMobileButton(Data: {Name: string, Flag: string, 
         if Visible == nil then
             Visible = not MainButton.Visible
         end
-
         MainButton.Visible = Visible
     end
 
@@ -922,7 +719,6 @@ function Assets.Functions:CreateMobileButton(Data: {Name: string, Flag: string, 
         for i,v in RealMobileButtonData.Connections do
             v:Disconnect()
         end
-
         table.clear(RealMobileButtonData)
         MainButton:Destroy()
     end
@@ -953,7 +749,7 @@ function Assets.Functions:CreateMobileButton(Data: {Name: string, Flag: string, 
                     for i,v in UIData.InputFuncs do
                         UIData.InputFuncs[i] = function() end
                     end
-                    
+
                     RealMobileButtonData.Holding = false
 
                     Night.CurrentConfig.Others.MobileButtonPosition[Data.Flag] = {MainButton.Position.X.Scale, MainButton.Position.Y.Scale}
@@ -972,7 +768,7 @@ function Assets.Functions:CreateMobileButton(Data: {Name: string, Flag: string, 
                 }
 
                 UIData.InputFuncs.Changed = function(ChangedInput: InputObject)
-                    if (ChangedInput.UserInputType == Enum.UserInputType.MouseMovement or ChangedInput.UserInputType == Enum.UserInputType.Touch) then  
+                    if (ChangedInput.UserInputType == Enum.UserInputType.MouseMovement or ChangedInput.UserInputType == Enum.UserInputType.Touch) then
                         if RealMobileButtonData.DraggingData.Active then
                             Assets.Functions:Drag(RealMobileButtonData.DraggingData, ChangedInput)
                         end
@@ -1015,7 +811,7 @@ function Assets.Functions:CreateNotification(Data: {Title: string, Description: 
                 v:Cancel()
             end
 
-            table.clear(v.Tweens)       
+            table.clear(v.Tweens)
             local NewPos: number = Noti.Position.Y.Scale - 0.075
             if UIData.NotificationsSettings.Alignment == "Top" then
                 NewPos = Noti.Position.Y.Scale + 0.075
@@ -1036,21 +832,17 @@ function Assets.Functions:CreateNotification(Data: {Title: string, Description: 
     local TitleTextSize = 18
     local DescTextSize = 15
 
-    -- Measure single-line widths to determine notification width
     local SingleLineTitleWidth = Assets.Functions:GetTextBounds(Data.Title, Font, TitleTextSize).X
     local SingleLineDescWidth = Assets.Functions:GetTextBounds(Data.Description, Font, DescTextSize).X
     local MaxTextWidth = math.max(SingleLineTitleWidth, SingleLineDescWidth)
 
-    -- Cap width between 160 and 450, with padding for the frame
     local ContentWidth = math.clamp(MaxTextWidth, 160, 450)
     local NotificationWidth = ContentWidth + 45
     local Padding = 10
 
-    -- Measure wrapped text heights using the capped content width
     local WrappedTitleBounds = Assets.Functions:GetTextBounds(Data.Title, Font, TitleTextSize)
     local WrappedDescBounds = Assets.Functions:GetTextBounds(Data.Description, Font, DescTextSize)
 
-    -- If the text is wider than our content area, re-measure with width constraint
     local TitleHeight = WrappedTitleBounds.Y
     local DescHeight = WrappedDescBounds.Y
     if SingleLineTitleWidth > ContentWidth then
@@ -1062,7 +854,6 @@ function Assets.Functions:CreateNotification(Data: {Title: string, Description: 
         DescHeight = DescLines * (DescTextSize + 2)
     end
 
-    -- Dynamic notification height: padding + title + gap + description + padding
     local TitleYPos = Padding
     local DescYPos = Padding + TitleHeight + 4
     local NotificationHeight = math.max(56, Padding + TitleHeight + 4 + DescHeight + Padding)
@@ -1126,8 +917,8 @@ function Assets.Functions:CreateNotification(Data: {Title: string, Description: 
 
             local Tween = TweenService:Create(Notification, TweenInfo.new(0.15), {Position = UDim2.fromScale(Notification.Position.X.Scale, Value)})
             Tween:Play()
-            
-            local TCon 
+
+            local TCon
             TCon = Tween.Completed:Connect(function()
                 Notification:Destroy()
                 TCon:Disconnect()
@@ -1164,7 +955,6 @@ function Assets.Functions:CreateNotification(Data: {Title: string, Description: 
 
     RealNotificationData.StartTime = os.clock()
     coroutine.wrap(function()
-        -- idek ts is horrid
         repeat task.wait() until not RealNotificationData or not RealNotificationData.Notification or not RealNotificationData.StartTime or ((os.clock() - RealNotificationData.StartTime) >= RealNotificationData.Data.Duration)
         if RealNotificationData then
             RealNotificationData:Destroy()
@@ -1201,7 +991,6 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
         Connections = {}
     }
 
-    -- gotta do ts cuz lsp
     local TextSize: UDim2 = UDim2.fromOffset(123, 20)
     local TextPos: UDim2 = UDim2.fromScale(0.067, 0.359)
     if WindowData.Data.Text then
@@ -1223,7 +1012,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
     CreateShadow(Window)
 
     WindowData.DefaultPos = Data.DefaultPosition
-    if Data.Visible ~= nil and typeof(Data.Visible) == "boolean" then 
+    if Data.Visible ~= nil and typeof(Data.Visible) == "boolean" then
         Window.Visible = Data.Visible
     end
 
@@ -1269,7 +1058,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
         return NewData.Text
     end
 
-    function WindowData.Functions:ChangeName(NewData: {Name: string}): string        
+    function WindowData.Functions:ChangeName(NewData: {Name: string}): string
         UIData.Windows.Windows[NewData.Name] = table.clone(UIData.Windows.Windows[Data.Flag])
 
         table.clear(UIData.Windows.Windows[Data.Flag])
@@ -1327,7 +1116,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
             }
 
             UIData.InputFuncs.Changed = function(ChangedInput: InputObject)
-                if (ChangedInput.UserInputType == Enum.UserInputType.MouseMovement or ChangedInput.UserInputType == Enum.UserInputType.Touch) then  
+                if (ChangedInput.UserInputType == Enum.UserInputType.MouseMovement or ChangedInput.UserInputType == Enum.UserInputType.Touch) then
                     if WindowData.DragData.Dragging then
                         Assets.Functions:Drag(WindowData.DragData, ChangedInput)
                     end
@@ -1347,7 +1136,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                     for i,v in UIData.InputFuncs do
                         UIData.InputFuncs[i] = function() end
                     end
-                    
+
                     Night.CurrentConfig.Others.TabData[Data.Flag] = {
                         Visible = Window.Visible,
                         Position = {Window.Position.X.Scale, Window.Position.Y.Scale}
@@ -1547,7 +1336,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                 if Toggled == nil then
                     Toggled = not ButtonData.Selected
                 end
-                
+
                 if SaveConfig == nil then
                     SaveConfig = true
                 end
@@ -1581,7 +1370,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
             end
 
             if Data.Top then
-                table.insert(ButtonData.Connections, Button.MouseButton1Click:Connect(function()  
+                table.insert(ButtonData.Connections, Button.MouseButton1Click:Connect(function()
                     ButtonData.Functions.Toggle(ButtonData)
                 end))
             else
@@ -1640,7 +1429,6 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
             CloseIcon = ""
         end
 
-        -- hate this lsp
         local ClosePos: UDim2 = UDim2.fromScale(0.862, 0.377)
         if Data.ClosePos then
             ClosePos = Data.ClosePos
@@ -1662,7 +1450,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
             end
 
             if WindowData.Data.OnClose then
-                WindowData.Data.OnClose(Data) -- got do ts shi cuz my lsp wont let me call it without telling me its a error
+                WindowData.Data.OnClose(Data)
             end
 
             WindowData.Functions:SetVisiblity(false)
@@ -1725,10 +1513,8 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                 ModuleHolderLayout.SortOrder = Enum.SortOrder.LayoutOrder
                 ModuleHolderLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
-
                 WindowData.Modules.Holder = ModuleHolder
             end
-
 
             ModuleHolder.CanvasSize = UDim2.fromOffset(0, ModuleHolder.CanvasSize.Y.Offset + 70)
 
@@ -1787,13 +1573,13 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
             local RGB1, RGB2 = Assets.Functions:ConvertColor3toInt(Color[1]), Assets.Functions:ConvertColor3toInt(Color[2])
             local Gradients = {
                 [1] = {
-                    math.clamp(RGB1.R - 7, 0, 255), 
-                    math.clamp(RGB1.G - 24, 0, 255), 
+                    math.clamp(RGB1.R - 7, 0, 255),
+                    math.clamp(RGB1.G - 24, 0, 255),
                     math.clamp(RGB1.B - 46, 0, 255)
                 },
                 [2] = {
-                    math.clamp(RGB2.R - 5, 0, 255), 
-                    math.clamp(RGB2.G - 19, 0, 255), 
+                    math.clamp(RGB2.R - 5, 0, 255),
+                    math.clamp(RGB2.G - 19, 0, 255),
                     math.clamp(RGB2.B - 37, 0, 255)
                 }
             }
@@ -1808,7 +1594,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
             DropShadowEnabledGradient.Enabled = false
             table.insert(UIData.CustomizableItems.Modules, {Main = false, Gradient = DropShadowEnabledGradient})
             table.clear(Gradients)
-            
+
             local SettingsHolder: ScrollingFrame = Instance.new("ScrollingFrame", RealModuleHolder)
             SettingsHolder.BackgroundColor3 = Color3.fromRGB(11, 14, 18)
             SettingsHolder.Position = UDim2.fromOffset(0, 65)
@@ -1821,7 +1607,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
             SettingsHolder.ZIndex = 95
             SettingsHolder.ScrollBarImageTransparency = 1
             Instance.new("UICorner", SettingsHolder).CornerRadius = UDim.new(0, 14)
-            
+
             local SettingsLayout: UIListLayout = Instance.new("UIListLayout", SettingsHolder)
             SettingsLayout.Padding = UDim.new(0, 5)
             SettingsLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -1832,7 +1618,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
 
             function RealModuleData.Functions:SetValue(Toggled: boolean?, SaveConfig: boolean?, Notification: boolean?, Load: boolean?)
                 if setthreadidentity then setthreadidentity(8) end
-                
+
                 if not RealModuleData.Data.CanBeEnabled then return end
 
                 if Toggled == nil then
@@ -1858,10 +1644,10 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                         v:Disconnect()
                     end
                 end
-                
+
                 if RealModuleData.Data.CallingFunction then
                     task.spawn(RealModuleData.Data.CallingFunction, RealModuleData, Toggled)
-                    if Toggled then        
+                    if Toggled then
                         if RealModuleData.Data.Button then
                             task.delay(0.8, RealModuleData.Data.CallingFunction, RealModuleData, false)
 
@@ -1905,7 +1691,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                                 v.MobileButton:Destroy()
                                 v.MobileButton = nil
                             end
-                        end                                
+                        end
                     end
                 end
 
@@ -1974,7 +1760,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                     end
                 end)()
             end
-            
+
             function RealModuleData.Functions:Connection(Connection: RBXScriptConnection | thread, AddTo: {}?)
                 AddTo = AddTo or {}
                 if not table.find(AddTo, RealModuleData.Connections) then
@@ -1997,9 +1783,9 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                     Open = not RealModuleData.MData.SettingsOpen
                 end
 
-                if typeof(Open) == "boolean" and RealModuleData.MData.SettingsOpen ~= Open then -- gotta do ts for my lsp to shut up fr 💔😔🥶
+                if typeof(Open) == "boolean" and RealModuleData.MData.SettingsOpen ~= Open then
                     if Open then
-                        SettingsHolder.Size = UDim2.fromOffset(217, 0)    
+                        SettingsHolder.Size = UDim2.fromOffset(217, 0)
                         SettingsHolder.AutomaticSize = Enum.AutomaticSize.Y
                     end
 
@@ -2009,7 +1795,6 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                         SettingsHolder.Size = UDim2.fromOffset(217, YSizeSettings)
                         SettingsHolder.AutomaticSize = Enum.AutomaticSize.None
                     end
-
 
                     SettingsHolder.Visible = Open
                     if not Open then
@@ -2121,14 +1906,12 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                     if Visible == nil then
                         Visible = not MiniToggleBase.Visible
                     end
-
                     MiniToggleBase.Visible = Visible
                 end
 
                 Assets.Connections:Add(MiniToggleBase.MouseButton1Click:Connect(function()
                     RealMiniToggleData.Functions:SetValue(nil)
                 end), {RealMiniToggleData.Connections, RealModuleData.Connections, WindowData.Connections})
-
 
                 setmetatable(RealMiniToggleData, {
                     __index = RealMiniToggleData.Functions
@@ -2224,7 +2007,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                     if SaveConfig == nil then
                         SaveConfig = true
                     end
-                    
+
                     if SaveConfig then
                         Night.CurrentConfig.Sliders[SliderData.Data.Flag] = Value
                         Assets.Config:Save(Night.CurrentConfig, tostring(Night.Game).."/"..tostring(Night.CurrentConfig.ConfigName), {tostring(Night.Game)})
@@ -2240,7 +2023,6 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                     if Visible == nil then
                         Visible = not SliderBase.Visible
                     end
-
                     SliderBase.Visible = Visible
                 end
 
@@ -2261,15 +2043,15 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                             local RPos: number = Input.Position.X - SliderBackground.AbsolutePosition.X
                             local Percent: number = math.clamp(RPos/(SliderBackground.AbsoluteSize.X - 20), 0, 1)
                             local DraggedValue: number = math.floor((SliderData.Data.Min + (Percent * (SliderData.Data.Max - SliderData.Data.Min)) + (SliderData.Data.Increment / 2)) / SliderData.Data.Increment) * SliderData.Data.Increment
-                            
+
                             local DecimalFactor: number = 1 / SliderData.Data.Increment
                             local RealValue: number = math.clamp(math.floor(DraggedValue * DecimalFactor + 0.5) / DecimalFactor, SliderData.Data.Min, SliderData.Data.Max)
-                            
+
                             SliderData.Functions:SetValue(RealValue)
                         end
                     end
 
-                    UIData.InputFuncs.Ended = function(InputEnd: InputObject) 
+                    UIData.InputFuncs.Ended = function(InputEnd: InputObject)
                         if InputEnd.UserInputType == Enum.UserInputType.MouseButton1 or InputEnd.UserInputType == Enum.UserInputType.Touch then
                             SliderData.Dragging = false
 
@@ -2283,7 +2065,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                 setmetatable(SliderData, {
                     __index = SliderData.Functions
                 })
-                
+
                 RealModuleData.Settings.Sliders[SData.Flag] = SliderData
                 return SliderData
             end
@@ -2362,7 +2144,6 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                     if Visible == nil then
                         Visible = not MainBackground.Visible
                     end
-
                     MainBackground.Visible = Visible
                 end
 
@@ -2381,7 +2162,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                 RealModuleData.Settings.TextBoxes[TBData.Flag] = RealTextBoxData
                 return RealTextBoxData
             end
-            
+
             function RealModuleData.Functions:ColorSlider(CSData: {Name: string, Flag: string, Default: Color3?, CallingFunction: (self: any, Color3: Color3, Color: {R: number, G: number, B: number}) -> ()})
                 local RealColorSliderData = {
                     Data = CSData,
@@ -2402,7 +2183,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
 
                 local MainText: TextLabel = Instance.new("TextLabel", MainBackground)
                 MainText.BackgroundTransparency = 1
-                MainText.BorderSizePixel = 0 
+                MainText.BorderSizePixel = 0
                 MainText.Position = UDim2.fromScale(0.09, 0.1)
                 MainText.Size = UDim2.fromOffset(120, 16)
                 MainText.ZIndex = 95
@@ -2418,7 +2199,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                 TextBoxBackground.BackgroundColor3 = Color3.fromRGB(14, 16, 23)
                 TextBoxBackground.Position = UDim2.fromScale(0.08, 0.5)
                 TextBoxBackground.Size = UDim2.fromOffset(90, 20)
-                TextBoxBackground.ZIndex =  95
+                TextBoxBackground.ZIndex = 95
                 Instance.new("UICorner", TextBoxBackground).CornerRadius = UDim.new(0, 6)
 
                 local MainTextBox: TextBox = Instance.new("TextBox", TextBoxBackground)
@@ -2481,7 +2262,6 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                     if Visible == nil then
                         Visible = not MainBackground.Visible
                     end
-
                     MainBackground.Visible = Visible
                 end
 
@@ -2490,10 +2270,10 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                         RealColorSliderData.Functions:Rainbow()
                         return
                     end
-                    
+
                     RealColorSliderData.TableValue = RGB
                     RealColorSliderData.Value = tostring(RGB.R)..", "..tostring(RGB.G)..", "..tostring(RGB.B)
-                    
+
                     local RGBValue: Color3 = Color3.fromRGB(RGB.R, RGB.G, RGB.B)
                     RealColorSliderData.Data.CallingFunction(RealColorSliderData, RGBValue, RGB)
 
@@ -2559,7 +2339,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                         end
                     end
 
-                    UIData.InputFuncs.Ended = function(InputEnd: InputObject) 
+                    UIData.InputFuncs.Ended = function(InputEnd: InputObject)
                         if InputEnd.UserInputType == Enum.UserInputType.MouseButton1 or InputEnd.UserInputType == Enum.UserInputType.Touch then
                             RealColorSliderData.Dragging = false
 
@@ -2721,7 +2501,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                     OptionBg.ZIndex = 96
                     OptionBg.ImageTransparency = 1
                     OptionBg.AutoButtonColor = false
-                    
+
                     local OptionText: TextLabel = Instance.new("TextLabel", OptionBg)
                     OptionText.BackgroundTransparency = 1
                     OptionText.BorderSizePixel = 0
@@ -2756,7 +2536,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                             saveconfig = true
                         end
 
-                        if selected ~= nil then -- gotta do the ~= nil cuz my fucking lsp wont let me js set it
+                        if selected ~= nil then
                             if RealDropdownData.SelectedAmount >= RealDropdownData.Data.MaxLimit and RealDropdownData.Data.MaxLimit == 1 and selected then
                                 for i,v in RealDropdownData.Selected do
                                     v:SetValue(false, saveconfig, false, true)
@@ -2820,7 +2600,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                                             end
                                         end
                                     end
-                                    
+
                                     if NewText == "" then
                                         NewText = "None Selected"
                                     end
@@ -2845,10 +2625,10 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
 
                 function RealDropdownData.Functions:ToggleSideMenu(Visible: boolean?)
                     if Visible == nil then
-                        Visible = not MainDropdownFrame.Visible 
+                        Visible = not MainDropdownFrame.Visible
                     end
 
-                    if Visible ~= nil then -- lsp moment 
+                    if Visible ~= nil then
                         MainDropdownFrame.Visible = Visible
                         if Visible then
                             DropArrow.Rotation = 90
@@ -2866,7 +2646,6 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                     if Visible == nil then
                         Visible = not MainBg.Visible
                     end
-
                     MainBg.Visible = Visible
                 end
 
@@ -2931,7 +2710,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                 KeybindBox.ImageTransparency = 1
                 KeybindBox.ZIndex = 95
                 Instance.new("UICorner", KeybindBox).CornerRadius = UDim.new(0, 6)
-                
+
                 local CurrentBindText: TextLabel = Instance.new("TextLabel", KeybindBox)
                 CurrentBindText.BackgroundTransparency = 1
                 CurrentBindText.BorderSizePixel = 0
@@ -2959,7 +2738,6 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                     if Visible == nil then
                         Visible = not MainBg.Visible
                     end
-                    
                     MainBg.Visible = Visible
                 end
 
@@ -2998,9 +2776,9 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                     if Night.Mobile then
                         if RealKeybindData.Bind or not RealKeybind then
                             if CanBeReset then
-                                RealKeybindData.Bind = nil 
-                                CurrentBindText.TextColor3 = Color3.fromRGB(46, 54, 76)    
-                                CurrentBindText.Text = "Bind" 
+                                RealKeybindData.Bind = nil
+                                CurrentBindText.TextColor3 = Color3.fromRGB(46, 54, 76)
+                                CurrentBindText.Text = "Bind"
 
                                 if RealKeybindData.MobileButton then
                                     RealKeybindData.MobileButton:Destroy()
@@ -3041,24 +2819,23 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                         if RealKeybind and RealKeybind.Name then
                             RealKeybindData.Binding = false
                             if RealKeybind == RealKeybindData.Bind and CanBeReset then
-                                RealKeybindData.Bind = nil 
-                                CurrentBindText.TextColor3 = Color3.fromRGB(46, 54, 76)    
-                                CurrentBindText.Text = "Bind" 
+                                RealKeybindData.Bind = nil
+                                CurrentBindText.TextColor3 = Color3.fromRGB(46, 54, 76)
+                                CurrentBindText.Text = "Bind"
                             else
                                 RealKeybindData.Bind = RealKeybind
                                 CurrentBindText.TextColor3 = UIData.Theme.Other
-                                CurrentBindText.Text = RealKeybind.Name                              
+                                CurrentBindText.Text = RealKeybind.Name
                             end
                         else
                             if Load then
-                                RealKeybindData.Bind = nil 
-                                CurrentBindText.TextColor3 = Color3.fromRGB(46, 54, 76)    
-                                CurrentBindText.Text = "Bind" 
+                                RealKeybindData.Bind = nil
+                                CurrentBindText.TextColor3 = Color3.fromRGB(46, 54, 76)
+                                CurrentBindText.Text = "Bind"
                             end
                         end
-                    end   
-                       
-                    
+                    end
+
                     UIData.CustomizableItems.Other[PlacePos].CanChange = RealKeybindData.Bind ~= nil
                     if RealKeybindData.Data.CallingFunction then
                         RealKeybindData.Data.CallingFunction(RealKeybindData, RealKeybindData.Bind)
@@ -3180,7 +2957,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                 ClickText.Text = "Click"
                 ClickText.TextScaled = true
                 ClickText.TextWrapped = true
-                ClickText.TextStrokeTransparency = 1 
+                ClickText.TextStrokeTransparency = 1
                 ClickText.FontFace = Font.new(Assets.Functions:GetFont("BuilderMono", {{
                     Name = "Bold",
                     Weight = 700,
@@ -3191,7 +2968,6 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                     if Visible == nil then
                         Visible = not MainBg.Visible
                     end
-
                     MainBg.Visible = Visible
                 end
 
@@ -3212,7 +2988,7 @@ local function CreateWindow(Data: {Name: string, Flag: string, Size: UDim2, Posi
                 setmetatable(RealButtonData, {
                     __index = RealButtonData.Functions
                 })
-                
+
                 return RealButtonData
             end
 
@@ -3295,87 +3071,11 @@ function Assets.Functions:CreateTab(Data: {Name: string, Flag: string, Icon: str
     })
 end
 
-function Assets.Functions:Countdown(Time: number, Unit: string)
-    local CountDownData = {
-        MainFrame = nil :: Frame?,
-        Functions = {},
-    }
-
-
-    local MainFrame: Frame = Instance.new("Frame", MainScreenGui)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(8, 10, 13)
-    MainFrame.Position = UDim2.fromScale(0.006, 0.695)
-    MainFrame.AnchorPoint = Vector2.new(0.5, 0)
-    MainFrame.Position = UDim2.fromScale(0.5, 0.7)
-    MainFrame.Size = UDim2.fromOffset(200, 60)
-    MainFrame.ZIndex = 2
-    CountDownData.MainFrame = MainFrame
-    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 15)
-    CreateShadow(MainFrame)
-
-    local BarMain: Frame = Instance.new("Frame", MainFrame)
-    BarMain.BackgroundColor3 = Color3.fromRGB(14, 16, 23)
-    BarMain.AnchorPoint = Vector2.new(0.5, 0.5)
-    BarMain.Position = UDim2.fromScale(0.5, 0.45)
-    BarMain.Size = UDim2.fromOffset(127, 6)
-    BarMain.ZIndex = 2
-    Instance.new("UICorner", BarMain).CornerRadius = UDim.new(0, 8)
-
-    local BarFill: Frame = Instance.new("Frame", BarMain)
-    BarFill.BackgroundColor3 = UIData.Theme.Other
-    BarFill.Position = UDim2.fromScale(0, 0)
-    BarFill.Size = UDim2.fromScale(1, 1)
-    BarFill.ZIndex = 2
-    Instance.new("UICorner", BarFill).CornerRadius = UDim.new(0, 8)
-    table.insert(UIData.CustomizableItems.Other, {
-        CanChange = true,
-        Item = BarFill
-    })
-
-    local TimeLeftText: TextLabel = Instance.new("TextLabel", MainFrame)
-    TimeLeftText.BackgroundTransparency = 1
-    TimeLeftText.BorderSizePixel = 0
-    TimeLeftText.AnchorPoint = Vector2.new(0.5, 0)
-    TimeLeftText.Position = UDim2.fromScale(0.5, 0.6)
-    TimeLeftText.Size = UDim2.fromOffset(99, 15)
-    TimeLeftText.Font = Enum.Font.BuilderSans
-    TimeLeftText.Text = tostring(Time)..(Unit or "s")
-    TimeLeftText.TextColor3 = Color3.fromRGB(69, 79, 113)
-    TimeLeftText.TextScaled = true
-    TimeLeftText.TextWrapped = true
-    TimeLeftText.ZIndex = 2
-
-    function CountDownData.Functions:Destroy()
-        MainFrame:Destroy()
-        table.clear(CountDownData)
-    end
-
-    function CountDownData.Functions:SetVisiblity(Visible: boolean)
-        if Visible == nil then
-            Visible = not MainFrame.Visible
-        end
-
-        MainFrame.Visible = Visible        
-    end
-
-    function CountDownData.Functions:Update(NewTime: number, Unit: string)
-        TimeLeftText.Text = tostring(NewTime)..(Unit or "s")
-        TweenService:Create(BarFill, TweenInfo.new(0.15), {Size = UDim2.fromScale(math.clamp(tonumber(NewTime) / Time, 0, 1), 1)}):Play()
-    end
-
-
-    setmetatable(CountDownData, {
-        __index = CountDownData.Functions
-    })
-
-    return CountDownData
-end
-
 function Assets.Functions:CreateTargetHud(Data: {Player: Player?, UserData: {Name: string, DisplayName: string, ProfilePic: string?}?, Health: {Current: number, Max: number}?}?)
     if UIData.TargetHud then
         return UIData.TargetHud
     end
-    
+
     local TargetHudData = {
         Data = Data,
         DraggingData = {
@@ -3428,7 +3128,7 @@ function Assets.Functions:CreateTargetHud(Data: {Player: Player?, UserData: {Nam
 
     if TargetHudConfig then
         if TargetHudConfig.Position then
-            MainFrame.Position = UDim2.fromScale(table.unpack(TargetHudConfig.Position))            
+            MainFrame.Position = UDim2.fromScale(table.unpack(TargetHudConfig.Position))
         end
 
         if TargetHudConfig.Visible ~= nil then
@@ -3531,7 +3231,7 @@ function Assets.Functions:CreateTargetHud(Data: {Player: Player?, UserData: {Nam
             Visible = MainFrame.Visible,
             Position = {MainFrame.Position.X.Scale, MainFrame.Position.Y.Scale}
         }
-        
+
         Assets.Config:Save(Night.CurrentConfig, tostring(Night.Game).."/"..tostring(Night.CurrentConfig.ConfigName), {tostring(Night.Game)})
     end
 
@@ -3573,7 +3273,6 @@ function Assets.Functions:CreateTargetHud(Data: {Player: Player?, UserData: {Nam
             TargetHudData.Data.Health = NewData.Health
         end
 
-
         TweenService:Create(HealthBarFill, TweenInfo.new(0.15), {Size = UDim2.fromScale(math.clamp(TargetHudData.Data.Health.Current / TargetHudData.Data.Health.Max, 0, 1), 1)}):Play()
         HealthText.Text = tostring(TargetHudData.Data.Health.Current).."/"..tostring(TargetHudData.Data.Health.Max)
 
@@ -3595,7 +3294,7 @@ function Assets.Functions:CreateTargetHud(Data: {Player: Player?, UserData: {Nam
             }
 
             UIData.InputFuncs.Changed = function(ChangedInput: InputObject)
-                if (ChangedInput.UserInputType == Enum.UserInputType.MouseMovement or ChangedInput.UserInputType == Enum.UserInputType.Touch) then  
+                if (ChangedInput.UserInputType == Enum.UserInputType.MouseMovement or ChangedInput.UserInputType == Enum.UserInputType.Touch) then
                     if TargetHudData.DraggingData.Active then
                         Assets.Functions:Drag(TargetHudData.DraggingData, ChangedInput)
                     end
@@ -3615,7 +3314,7 @@ function Assets.Functions:CreateTargetHud(Data: {Player: Player?, UserData: {Nam
                     for i,v in UIData.InputFuncs do
                         UIData.InputFuncs[i] = function() end
                     end
-                    
+
                     Night.CurrentConfig.Others.TabData.TargetHud = {
                         Visible = MainFrame.Visible,
                         Position = {MainFrame.Position.X.Scale, MainFrame.Position.Y.Scale}
@@ -3645,7 +3344,7 @@ function Assets.Functions:GetTargetHud(Create: boolean, Data: {Player: Player?, 
     if not THUD and Create then
         THUD = Assets.Functions:CreateTargetHud(Data)
     end
-    
+
     return THUD
 end
 
@@ -3777,7 +3476,6 @@ function Assets.Functions:CreateConfigOption(Data: {Name: string, New: boolean?,
     DeleteButton.ImageTransparency = 0.4
     DeleteButton.ZIndex = 90
 
-
     function RealData.Functions:Destroy()
         for i,v in RealData.Connections do
             v:Disconnect()
@@ -3803,7 +3501,7 @@ function Assets.Functions:CreateConfigOption(Data: {Name: string, New: boolean?,
             end
 
             if delfile and ConfigPath and isfile(ConfigPath) then
-                delfile(ConfigPath)    
+                delfile(ConfigPath)
             end
 
             RealData.CurrentConfigName = SetValue
@@ -3886,10 +3584,10 @@ function Assets.Functions:CreateConfigOption(Data: {Name: string, New: boolean?,
             if enter and isfile and readfile and writefile then
                 if not RealData.Data.New then
                     local ConfigPath = "NewNight/Configs/"..RealData.Data.ConfigFolder.."/"..RealData.CurrentConfigName..".json"
-                    if isfile(ConfigPath)  then
+                    if isfile(ConfigPath) then
                         local Contents: string = readfile(ConfigPath)
                         local Suc, JSON = pcall(HttpService.JSONDecode, HttpService, Contents)
-                        if Suc and JSON then                            
+                        if Suc and JSON then
                             RealData.Functions:Set(JSON, Title.Text, ConfigPath)
                             return
                         end
@@ -3899,7 +3597,7 @@ function Assets.Functions:CreateConfigOption(Data: {Name: string, New: boolean?,
                     if not isfile(Path) then
                         RealData.Functions:Set(DeepClone(DefaultConfig), Title.Text)
                         RealData.Data.New = false
-                        
+
                         UIData.ConfigButtons[RealData.Flag] = nil
                         RealData.Flag = Title.Text.."Option"
                         UIData.ConfigButtons[RealData.Flag] = RealData
@@ -3947,7 +3645,6 @@ function Assets.Functions:CreateConfigOption(Data: {Name: string, New: boolean?,
         pcall(writefile, "NewNight/Configs/"..tostring(Night.Game).."/LastUsed.txt", RealData.CurrentConfigName)
     end
 
-
     setmetatable(RealData, {
         __index = RealData.Functions
     })
@@ -3966,7 +3663,7 @@ function Assets.Functions:CreateConfigOptions(Game: string)
         makefolder("NewNight/Configs/"..tostring(Game))
     end
 
-    if isfile and listfiles and readfile then 
+    if isfile and listfiles and readfile then
         local Files = listfiles("NewNight/Configs/"..tostring(Game))
         local LastUsed: string?, LastUsedPath: string = nil, "NewNight/Configs/"..tostring(Game).."/LastUsed.txt"
         if isfile(LastUsedPath) then
@@ -4019,7 +3716,6 @@ local SettingsDashButton = Night.MainWindow:MakeDashboardButton({
     Text = {
         Text = "Settings",
         Color = Color3.fromRGB(170, 170, 170),
-        -- OpenColor = Color3.fromRGB(210, 219, 229)
     },
     Icon = {
         Name = "Settings",
@@ -4064,10 +3760,10 @@ UISettingsWindow:CreateModule({
             local Data = string.format("getgenv().NightInit = {")
             local Wrote = false
             for i,v in Night.Init do
-				local Item: string = tostring(i).." = "..tostring(v)
-				if typeof(v) == "string" then
-					Item = tostring(i).." = '"..tostring(v) .. "'"
-				end
+                local Item: string = tostring(i).." = "..tostring(v)
+                if typeof(v) == "string" then
+                    Item = tostring(i).." = '"..tostring(v) .. "'"
+                end
 
                 if Wrote then
                     Data = Data..", "..Item
@@ -4084,7 +3780,7 @@ UISettingsWindow:CreateModule({
                     if NightInit.Dev and isfile("NewNight/Loader.luau") then
                         loadstring(readfile("NewNight/Loader.luau"))()
                     else
-                        loadstring(game:HttpGet("https://raw.githubusercontent.com/null-wtf/NewNight/refs/heads/main/Loader.luau"))()
+                        loadstring(game:HttpGet("https://raw.githubusercontent.com/GLAMOHGA/libary/refs/heads/main/Loader.luau"))()
                     end
                 ]])()
             end)
@@ -4182,23 +3878,23 @@ GUISettings:ColorSlider({
         UIData.Theme.ModuleTheme[1] = Color
         for i,v: {Main: boolean, Gradient: UIGradient} in UIData.CustomizableItems.Modules do
             if v.Main then
-                v.Gradient.Color =  ColorSequence.new({ColorSequenceKeypoint.new(0, Color), ColorSequenceKeypoint.new(1, UIData.Theme.ModuleTheme[2])})
+                v.Gradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color), ColorSequenceKeypoint.new(1, UIData.Theme.ModuleTheme[2])})
             else
                 local RGB2 = Assets.Functions:ConvertColor3toInt(UIData.Theme.ModuleTheme[2])
                 local Gradients = {
                     [1] = {
-                        math.clamp(RGB.R - 7, 0, 255), 
-                        math.clamp(RGB.G - 24, 0, 255), 
+                        math.clamp(RGB.R - 7, 0, 255),
+                        math.clamp(RGB.G - 24, 0, 255),
                         math.clamp(RGB.B - 46, 0, 255)
                     },
                     [2] = {
-                        math.clamp(RGB2.R - 5, 0, 255), 
-                        math.clamp(RGB2.G - 19, 0, 255), 
+                        math.clamp(RGB2.R - 5, 0, 255),
+                        math.clamp(RGB2.G - 19, 0, 255),
                         math.clamp(RGB2.B - 37, 0, 255)
                     }
                 }
 
-                v.Gradient.Color =  ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(table.unpack(Gradients[1]))), ColorSequenceKeypoint.new(1, Color3.fromRGB(table.unpack(Gradients[2])))})
+                v.Gradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(table.unpack(Gradients[1]))), ColorSequenceKeypoint.new(1, Color3.fromRGB(table.unpack(Gradients[2])))})
                 table.clear(Gradients)
             end
         end
@@ -4213,23 +3909,23 @@ GUISettings:ColorSlider({
         UIData.Theme.ModuleTheme[2] = Color
         for i,v: {Main: boolean, Gradient: UIGradient} in UIData.CustomizableItems.Modules do
             if v.Main then
-                v.Gradient.Color =  ColorSequence.new({ColorSequenceKeypoint.new(0, UIData.Theme.ModuleTheme[1]), ColorSequenceKeypoint.new(1, Color)})
+                v.Gradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, UIData.Theme.ModuleTheme[1]), ColorSequenceKeypoint.new(1, Color)})
             else
                 local RGB1 = Assets.Functions:ConvertColor3toInt(UIData.Theme.ModuleTheme[1])
                 local Gradients = {
                     [1] = {
-                        math.clamp(RGB1.R - 7, 0, 255), 
-                        math.clamp(RGB1.G - 24, 0, 255), 
+                        math.clamp(RGB1.R - 7, 0, 255),
+                        math.clamp(RGB1.G - 24, 0, 255),
                         math.clamp(RGB1.B - 46, 0, 255)
                     },
                     [2] = {
-                        math.clamp(RGB.R - 5, 0, 255), 
-                        math.clamp(RGB.G - 19, 0, 255), 
+                        math.clamp(RGB.R - 5, 0, 255),
+                        math.clamp(RGB.G - 19, 0, 255),
                         math.clamp(RGB.B - 37, 0, 255)
                     }
                 }
 
-                v.Gradient.Color =  ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(table.unpack(Gradients[1]))), ColorSequenceKeypoint.new(1, Color3.fromRGB(table.unpack(Gradients[2])))})
+                v.Gradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(table.unpack(Gradients[1]))), ColorSequenceKeypoint.new(1, Color3.fromRGB(table.unpack(Gradients[2])))})
                 table.clear(Gradients)
             end
         end
@@ -4272,7 +3968,7 @@ UISettingsWindow:CreateModule({
             for i,v in UIData.Windows.Windows do
                 if v.DefaultPos then
                     v.Window.Position = v.DefaultPos
-                    
+
                     Night.CurrentConfig.Others.TabData[v.Data.Flag] = {
                         Visible = v.Window.Visible,
                         Position = {v.DefaultPos.X.Scale, v.DefaultPos.Y.Scale}
@@ -4304,14 +4000,6 @@ ArrayListSetting:ColorSlider({
     end
 })
 
-
-Assets.Functions:CreateTab({
-    Name = "Premium",
-    Flag = "Premium",
-    Icon = "Premium",
-    Order = 100
-})
-
 Assets.Connections:Add(UserInputService.InputChanged:Connect(function(Input: InputObject)
     UIData.InputFuncs.Changed(Input)
 end))
@@ -4334,7 +4022,6 @@ end))
 
 Assets.Functions:CreateConfigOptions(Night.Game)
 
--- i am a setmetatable warrior
 setmetatable(Night, {
     __index = Night.Assets
 })
