@@ -1,35 +1,36 @@
 local Night: {[string]: any} = getgenv().Night
 
-local DefaultConfig: {[string]: any} = {
-    ConfigName = "Default",
-    Modules = {},
-    Sliders = {},
-    ColorSliders = {},
-    Dropdowns = {},
-    TextBoxes = {},
-    Keybinds = {},
-    MiniToggles = {},
-    Others = {
-        MobileButtonPosition = {},
-        TabData = {}
+if not Night then
+    Night = {
+        Version = "3.17",
+        Scale = 0.8,
+        Keybind = Enum.KeyCode.RightShift,
+        Game = game.PlaceId,
+        Mobile = false,
+        Init = {},
+        Connections = {},
+        CurrentConfig = {},
+        IgnoreConfigs = {},
+        OnUninject = Instance.new("BindableEvent"),
+        Load = {Start = os.clock(), Time = 0, Loaded = false, LoadTips = {}},
+        Directories = {
+            "NewNight",
+            "NewNight/Configs",
+            "NewNight/Assets",
+            "NewNight/Assets/Fonts",
+            "NewNight/Assets/Icons",
+        },
     }
-}
+    getgenv().Night = Night
+end
 
-local function DeepClone(Clone: {[any]: any})
-    local RealClone = table.clone(Clone)
-    for i,v in RealClone do
-        if typeof(v) == "table" then
-            RealClone[i] = DeepClone(v)
-        end
+for _, v in Night.Directories do
+    if isfolder and makefolder and not isfolder(v) then
+        makefolder(v)
     end
-    return RealClone
 end
 
-Night.CurrentConfig = DeepClone(DefaultConfig)
-
-local cloneref = cloneref or function(Reference: Instance): Instance
-    return Reference
-end
+Night.CurrentConfig = Night.CurrentConfig or {}
 
 local Players : Players = cloneref(game:GetService("Players"))
 local TweenService : TweenService = cloneref(game:GetService("TweenService"))
