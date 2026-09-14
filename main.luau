@@ -2060,8 +2060,17 @@ Night.Load.Loaded = true
 Night.Load.Time = os.clock() - Night.Load.Start
 Night.MainWindowLoaded = true
 
+local RealSettingsWindow = CreateWindow({
+    Name = "Night",
+    Flag = "RealSettings",
+    Size = UDim2.fromOffset(255, 470),
+    Position = UDim2.fromScale(0.006, 0.085),
+    DefaultPosition = UDim2.fromScale(0.006, 0.085),
+    Visible = true,
+    Icon = {Icon = "Settings", Size = UDim2.fromOffset(25, 25)}
+})
 -- Все модули настроек теперь в главном окне Night
-Night.MainWindow:CreateModule({
+RealSettingsWindow:CreateModule({
     Name = "Uninject",
     Flag = "RealUIUinject",
     Notification = false,
@@ -2072,7 +2081,7 @@ Night.MainWindow:CreateModule({
     end
 })
 
-Night.MainWindow:CreateModule({
+RealSettingsWindow:CreateModule({
     Name = "ReInject",
     Flag = "RealUiReInjectSetting",
     Notification = false,
@@ -2103,7 +2112,7 @@ Night.MainWindow:CreateModule({
     end
 })
 
-local NotificationSettings = Night.MainWindow:CreateModule({
+local NotificationSettings = RealSettingsWindow:CreateModule({
     Name = "Notifications",
     Flag = "RealUINotificationToggle",
     Notification = false,
@@ -2133,7 +2142,7 @@ NotificationSettings:Dropdown({
     CallingFunction = function(self, Value) UIData.NotificationsSettings.Alignment = Value end
 })
 
-local GUISettings = Night.MainWindow:CreateModule({
+local GUISettings = RealSettingsWindow:CreateModule({
     Name = "GUI",
     Flag = "RealGUISettings",
     SaveConfig = false,
@@ -2224,7 +2233,7 @@ local ScaleSlider = GUISettings:Slider({
     end
 })
 
-Night.MainWindow:CreateModule({
+RealSettingsWindow:CreateModule({
     Name = "Sort Tabs",
     Flag = "RealGUISortTabsSetting",
     SaveConfig = false,
@@ -2243,7 +2252,7 @@ Night.MainWindow:CreateModule({
     end
 })
 
-local ArrayListSetting = Night.MainWindow:CreateModule({
+local ArrayListSetting = RealSettingsWindow:CreateModule({
     Name = "Array List",
     Flag = "ArrayList",
     Default = true,
