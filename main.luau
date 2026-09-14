@@ -1,5 +1,4 @@
 local Night = getgenv().Night
-
 if type(Night) ~= "table" then Night = {} end
 
 Night.Version = Night.Version or "3.17"
@@ -15,13 +14,7 @@ Night.OnUninject = Night.OnUninject or Instance.new("BindableEvent")
 Night.Load = Night.Load or {Start = os.clock(), Time = 0, Loaded = false, LoadTips = {}}
 Night.Load.Loaded = false
 Night.Load.Start = os.clock()
-Night.Directories = Night.Directories or {
-    "NewNight",
-    "NewNight/Configs",
-    "NewNight/Assets",
-    "NewNight/Assets/Fonts",
-    "NewNight/Assets/Icons",
-}
+Night.Directories = Night.Directories or {"NewNight","NewNight/Configs","NewNight/Assets","NewNight/Assets/Fonts","NewNight/Assets/Icons"}
 
 getgenv().Night = Night
 
@@ -29,17 +22,7 @@ for _, v in Night.Directories do
     if isfolder and makefolder and not isfolder(v) then makefolder(v) end
 end
 
-local DefaultConfig = {
-    ConfigName = "Default",
-    Modules = {},
-    Sliders = {},
-    ColorSliders = {},
-    Dropdowns = {},
-    TextBoxes = {},
-    Keybinds = {},
-    MiniToggles = {},
-    Others = {MobileButtonPosition = {}, TabData = {}}
-}
+local DefaultConfig = {ConfigName = "Default", Modules = {}, Sliders = {}, ColorSliders = {}, Dropdowns = {}, TextBoxes = {}, Keybinds = {}, MiniToggles = {}, Others = {MobileButtonPosition = {}, TabData = {}}}
 
 local function DeepClone(Clone)
     local RealClone = table.clone(Clone)
@@ -57,7 +40,6 @@ local HttpService = cloneref(game:GetService("HttpService"))
 local Workspace = cloneref(game:GetService("Workspace"))
 local UserInputService = cloneref(game:GetService("UserInputService"))
 local TextService = cloneref(game:GetService("TextService"))
-
 local Camera = Workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
@@ -72,29 +54,10 @@ local UIData = {
     ConfigButtons = {},
     ArrayListEntries = {},
     CustomizableItems = {Modules = {}, Other = {}},
-    Theme = {
-        ModuleTheme = {Color3.fromRGB(26, 95, 181), Color3.fromRGB(21, 80, 152)},
-        Other = Color3.fromRGB(26, 95, 181)
-    },
+    Theme = {ModuleTheme = {Color3.fromRGB(26, 95, 181), Color3.fromRGB(21, 80, 152)}, Other = Color3.fromRGB(26, 95, 181)},
     NotificationsSettings = {All = true, Modules = true, Other = true, Alignment = "Bottom"},
-    Icons = {
-        Configs = "rbxassetid://8992031246",
-        Close = "rbxassetid://17895651193",
-        Settings = "rbxassetid://8992031056",
-        TabSettings = "rbxassetid://75988696107576",
-        Arrow = "rbxassetid://11421095840",
-        Config = "rbxassetid://8992030918",
-        Trash = "rbxassetid://10747362241",
-        Combat = "rbxassetid://104133331585248",
-        Movement = "rbxassetid://121899433518557",
-        Render = "rbxassetid://127386420152841",
-        Utility = "rbxassetid://110186208471082"
-    },
-    Fonts = {
-        BuilderExtended = {Checked = false, Font = "rbxassetid://16658237174"},
-        BuilderSans = {Checked = true, Font = "rbxasset://fonts/families/BuilderSans.json"},
-        BuilderMono = {Checked = false, Font = "rbxassetid://16658246179"}
-    },
+    Icons = {Configs = "rbxassetid://8992031246", Close = "rbxassetid://17895651193", Settings = "rbxassetid://8992031056", TabSettings = "rbxassetid://75988696107576", Arrow = "rbxassetid://11421095840", Config = "rbxassetid://8992030918", Trash = "rbxassetid://10747362241", Combat = "rbxassetid://104133331585248", Movement = "rbxassetid://121899433518557", Render = "rbxassetid://127386420152841", Utility = "rbxassetid://110186208471082"},
+    Fonts = {BuilderExtended = {Checked = false, Font = "rbxassetid://16658237174"}, BuilderSans = {Checked = true, Font = "rbxasset://fonts/families/BuilderSans.json"}, BuilderMono = {Checked = false, Font = "rbxassetid://16658246179"}},
     InputFuncs = {Changed = function(Input) end, Ended = function(Input) end}
 }
 
@@ -107,14 +70,9 @@ UIScale.Scale = Night.Scale
 if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then
     Night.Mobile = true
     if Camera then
-        if 0.4 >= (Camera.ViewportSize.X / 1000) - 0.1 then
-            Night.Scale = 0.4
-        else
-            Night.Scale = (Camera.ViewportSize.X / 1000) - 0.2
-        end
-    else
-        Night.Scale = 0.5
-    end
+        if 0.4 >= (Camera.ViewportSize.X / 1000) - 0.1 then Night.Scale = 0.4
+        else Night.Scale = (Camera.ViewportSize.X / 1000) - 0.2 end
+    else Night.Scale = 0.5 end
 end
 
 do
@@ -142,11 +100,8 @@ do
     function Assets.Functions:LoadAsset(Name)
         local path = "NewNight/Assets/Icons/"..Name..".png"
         local icon = ""
-        if isfile and isfile(path) and getcustomasset then
-            icon = getcustomasset(path)
-        elseif UIData.Icons[Name] then
-            icon = UIData.Icons[Name]
-        end
+        if isfile and isfile(path) and getcustomasset then icon = getcustomasset(path)
+        elseif UIData.Icons[Name] then icon = UIData.Icons[Name] end
         if not icon then
             if Name:find("rbxasset") or Name:find("roblox.com") then icon = Name end
         end
@@ -212,9 +167,7 @@ do
     end
 
     function Assets.Connections:DisconnectAll()
-        for i,v in Night.Connections do
-            if v and v.Disconnect then v:Disconnect() end
-        end
+        for i,v in Night.Connections do if v and v.Disconnect then v:Disconnect() end end
         table.clear(Night.Connections)
     end
 
@@ -292,13 +245,9 @@ do
         task.delay(0.3, function()
             for i,v in UIData.CustomizableItems.Other do
                 if v.CanChange then
-                    if v.Item:IsA("Frame") or v.ChangeBackground then
-                        v.Item.BackgroundColor3 = UIData.Theme.Other
-                    elseif v.Item:IsA("ImageButton") or v.Item:IsA("ImageLabel") then
-                        v.Item.ImageColor3 = UIData.Theme.Other
-                    elseif v.Item:IsA("TextLabel") or v.Item:IsA("TextButton") or v.Item:IsA("TextBox") then
-                        v.Item.TextColor3 = UIData.Theme.Other
-                    end
+                    if v.Item:IsA("Frame") or v.ChangeBackground then v.Item.BackgroundColor3 = UIData.Theme.Other
+                    elseif v.Item:IsA("ImageButton") or v.Item:IsA("ImageLabel") then v.Item.ImageColor3 = UIData.Theme.Other
+                    elseif v.Item:IsA("TextLabel") or v.Item:IsA("TextButton") or v.Item:IsA("TextBox") then v.Item.TextColor3 = UIData.Theme.Other end
                 end
             end
         end)
@@ -1213,7 +1162,6 @@ local function CreateWindow(Data)
                 MiniToggleCircle.Size = UDim2.fromOffset(10, 10)
                 MiniToggleCircle.ZIndex = 95
                 Instance.new("UICorner", MiniToggleCircle).CornerRadius = UDim.new(1, 0)
-
                 function RealMiniToggleData.Functions:SetValue(Toggled, SaveConfig, Load)
                     if Toggled == nil then Toggled = not RealMiniToggleData.Enabled end
                     if SaveConfig == nil then SaveConfig = true end
@@ -1300,7 +1248,6 @@ local function CreateWindow(Data)
                 local CircleBorder = Instance.new("UIStroke", SliderCircle)
                 CircleBorder.Color = Color3.fromRGB(14, 16, 23)
                 CircleBorder.Thickness = 2
-
                 function SliderData.Functions:SetValue(Value, SaveConfig, Load)
                     SliderData.Value = Value
                     SliderData.Data.CallingFunction(SliderData, Value)
@@ -2013,10 +1960,181 @@ function Assets.Functions:CreateTab(Data)
     })
 end
 
--- ============================================================
--- Все модули настроек теперь в главном окне Night
--- ============================================================
-Night.MainWindow:CreateModule({
+function Assets.Functions:CreateTargetHud(Data)
+    if UIData.TargetHud then return UIData.TargetHud end
+    local TargetHudData = {Data = Data, DraggingData = {Active = false, StartInputPos = nil, FrameStartPos = nil, Window = nil}, MainFrame = nil, Functions = {}, Connections = {}}
+    if not TargetHudData.Data then TargetHudData.Data = {} end
+    if not TargetHudData.Data.UserData then
+        if TargetHudData.Data.Player then
+            TargetHudData.Data.UserData = {Name = TargetHudData.Data.Player.Name, DisplayName = TargetHudData.Data.Player.DisplayName, ProfilePic = Players:GetUserThumbnailAsync(TargetHudData.Data.Player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)}
+        else
+            TargetHudData.Data.UserData = {Name = "UserName", DisplayName = "DisplayName", ProfilePic = ""}
+        end
+    end
+    if not TargetHudData.Data.Health then TargetHudData.Data.Health = {Current = 100, Max = 100} end
+    local TargetHudConfig = Night.CurrentConfig.Others.TabData.TargetHud
+    local MainFrame = Instance.new("Frame", MainScreenGui)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(8, 10, 13)
+    MainFrame.Position = UDim2.fromScale(0.006, 0.695)
+    MainFrame.Size = UDim2.fromOffset(289, 120)
+    MainFrame.ZIndex = 2
+    TargetHudData.MainFrame = MainFrame
+    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 15)
+    CreateShadow(MainFrame)
+    if TargetHudConfig then
+        if TargetHudConfig.Position then MainFrame.Position = UDim2.fromScale(table.unpack(TargetHudConfig.Position)) end
+        if TargetHudConfig.Visible ~= nil then MainFrame.Visible = TargetHudConfig.Visible end
+    end
+    local DisplayNameText = Instance.new("TextLabel", MainFrame)
+    DisplayNameText.BackgroundTransparency = 1
+    DisplayNameText.BorderSizePixel = 0
+    DisplayNameText.Position = UDim2.fromScale(0.349, 0.28)
+    DisplayNameText.Size = UDim2.fromOffset(137, 20)
+    DisplayNameText.Font = Enum.Font.BuilderSansBold
+    DisplayNameText.Text = TargetHudData.Data.UserData.DisplayName
+    DisplayNameText.TextColor3 = Color3.fromRGB(101, 116, 166)
+    DisplayNameText.TextScaled = true
+    DisplayNameText.TextWrapped = true
+    DisplayNameText.TextXAlignment = Enum.TextXAlignment.Left
+    DisplayNameText.TextStrokeTransparency = 1
+    DisplayNameText.ZIndex = 2
+    local UserNameText = Instance.new("TextLabel", MainFrame)
+    UserNameText.BackgroundTransparency = 1
+    UserNameText.BorderSizePixel = 0
+    UserNameText.Position = UDim2.fromScale(0.349, 0.44)
+    UserNameText.Size = UDim2.fromOffset(137, 17)
+    UserNameText.FontFace = Font.new(Assets.Functions:GetFont("BuilderSans"), Enum.FontWeight.SemiBold)
+    UserNameText.Text = "@"..TargetHudData.Data.UserData.Name
+    UserNameText.TextColor3 = Color3.fromRGB(69, 79, 113)
+    UserNameText.TextScaled = true
+    UserNameText.TextWrapped = true
+    UserNameText.TextStrokeTransparency = 1
+    UserNameText.TextXAlignment = Enum.TextXAlignment.Left
+    UserNameText.ZIndex = 2
+    local PFPHolder = Instance.new("Frame", MainFrame)
+    PFPHolder.BackgroundColor3 = Color3.fromRGB(14, 16, 23)
+    PFPHolder.Position = UDim2.fromScale(0.098, 0.225)
+    PFPHolder.Size = UDim2.fromOffset(65, 65)
+    PFPHolder.ZIndex = 2
+    Instance.new("UICorner", PFPHolder).CornerRadius = UDim.new(0, 8)
+    local ActualPFPIcon = Instance.new("ImageLabel", PFPHolder)
+    ActualPFPIcon.BackgroundTransparency = 1
+    ActualPFPIcon.Position = UDim2.fromScale(0, -0.062)
+    ActualPFPIcon.Size = UDim2.fromOffset(65, 65)
+    ActualPFPIcon.Image = TargetHudData.Data.UserData.ProfilePic or ""
+    ActualPFPIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+    ActualPFPIcon.ZIndex = 2
+    Instance.new("UICorner", ActualPFPIcon).CornerRadius = UDim.new(0, 8)
+    local HealthBarMain = Instance.new("Frame", MainFrame)
+    HealthBarMain.BackgroundColor3 = Color3.fromRGB(14, 16, 23)
+    HealthBarMain.Position = UDim2.fromScale(0.35, 0.63)
+    HealthBarMain.Size = UDim2.fromOffset(127, 6)
+    HealthBarMain.ZIndex = 2
+    Instance.new("UICorner", HealthBarMain).CornerRadius = UDim.new(0, 8)
+    local HealthBarFill = Instance.new("Frame", HealthBarMain)
+    HealthBarFill.BackgroundColor3 = UIData.Theme.Other
+    HealthBarFill.Position = UDim2.fromScale(0, 0)
+    HealthBarFill.Size = UDim2.fromScale(math.clamp(TargetHudData.Data.Health.Current / TargetHudData.Data.Health.Max, 0, 1), 1)
+    HealthBarFill.ZIndex = 2
+    Instance.new("UICorner", HealthBarFill).CornerRadius = UDim.new(0, 8)
+    table.insert(UIData.CustomizableItems.Other, {CanChange = true, Item = HealthBarFill})
+    local HealthText = Instance.new("TextLabel", MainFrame)
+    HealthText.BackgroundTransparency = 1
+    HealthText.BorderSizePixel = 0
+    HealthText.Position = UDim2.fromScale(0.369, 0.75)
+    HealthText.Size = UDim2.fromOffset(99, 15)
+    HealthText.Font = Enum.Font.BuilderSans
+    HealthText.Text = tostring(TargetHudData.Data.Health.Current).."/"..tostring(TargetHudData.Data.Health.Max)
+    HealthText.TextColor3 = Color3.fromRGB(69, 79, 113)
+    HealthText.TextScaled = true
+    HealthText.TextWrapped = true
+    HealthText.ZIndex = 2
+    function TargetHudData.Functions:Destroy()
+        UIData.TargetHud = nil
+        for i,v in TargetHudData.Connections do v:Disconnect() end
+        MainFrame:Destroy()
+        table.clear(TargetHudData)
+    end
+    function TargetHudData.Functions:SetVisiblity(Visible)
+        if Visible == nil then Visible = not MainFrame.Visible end
+        MainFrame.Visible = Visible
+        Night.CurrentConfig.Others.TabData.TargetHud = {Visible = MainFrame.Visible, Position = {MainFrame.Position.X.Scale, MainFrame.Position.Y.Scale}}
+        Assets.Config:Save(Night.CurrentConfig, tostring(Night.Game).."/"..tostring(Night.CurrentConfig.ConfigName), {tostring(Night.Game)})
+    end
+    function TargetHudData.Functions:Update(NewData)
+        if not NewData then return end
+        if not NewData.UserData then
+            if NewData.Player then
+                TargetHudData.Data.UserData = {Name = NewData.Player.Name, DisplayName = NewData.Player.DisplayName, ProfilePic = Players:GetUserThumbnailAsync(NewData.Player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)}
+            else
+                TargetHudData.Data.UserData = {Name = "UserName", DisplayName = "DisplayName", ProfilePic = ""}
+            end
+        else
+            TargetHudData.Data.UserData = NewData.UserData
+        end
+        if not TargetHudData.Data then return end
+        DisplayNameText.Text = TargetHudData.Data.UserData.DisplayName
+        UserNameText.Text = "@"..TargetHudData.Data.UserData.Name
+        ActualPFPIcon.Image = TargetHudData.Data.UserData.ProfilePic
+        if not NewData.Health then TargetHudData.Data.Health = {Current = 100, Max = 100}
+        else TargetHudData.Data.Health = NewData.Health end
+        TweenService:Create(HealthBarFill, TweenInfo.new(0.15), {Size = UDim2.fromScale(math.clamp(TargetHudData.Data.Health.Current / TargetHudData.Data.Health.Max, 0, 1), 1)}):Play()
+        HealthText.Text = tostring(TargetHudData.Data.Health.Current).."/"..tostring(TargetHudData.Data.Health.Max)
+        if NewData.Visible == nil then NewData.Visible = MainFrame.Visible end
+        TargetHudData.Functions:SetVisiblity(NewData.Visible)
+    end
+    Assets.Connections:Add(MainFrame.InputBegan:Connect(function(Input)
+        if ((Input.UserInputType == Enum.UserInputType.MouseButton1) or (Input.UserInputType == Enum.UserInputType.Touch)) and not UIData.Windows.Dragging then
+            UIData.Windows.Dragging = MainFrame
+            TargetHudData.DraggingData = {Active = true, StartInputPos = Input.Position, FrameStartPos = MainFrame.Position, Window = MainFrame}
+            UIData.InputFuncs.Changed = function(ChangedInput)
+                if (ChangedInput.UserInputType == Enum.UserInputType.MouseMovement or ChangedInput.UserInputType == Enum.UserInputType.Touch) then
+                    if TargetHudData.DraggingData.Active then Assets.Functions:Drag(TargetHudData.DraggingData, ChangedInput) end
+                end
+            end
+            UIData.InputFuncs.Ended = function(EndInput)
+                if (EndInput.UserInputType == Enum.UserInputType.MouseButton1) or (EndInput.UserInputType == Enum.UserInputType.Touch) then
+                    UIData.Windows.Dragging = nil
+                    TargetHudData.DraggingData = {Active = false, StartInputPos = Input.Position, FrameStartPos = MainFrame.Position, Window = MainFrame}
+                    for i,v in UIData.InputFuncs do UIData.InputFuncs[i] = function() end end
+                    Night.CurrentConfig.Others.TabData.TargetHud = {Visible = MainFrame.Visible, Position = {MainFrame.Position.X.Scale, MainFrame.Position.Y.Scale}}
+                    Assets.Config:Save(Night.CurrentConfig, tostring(Night.Game).."/"..tostring(Night.CurrentConfig.ConfigName), {tostring(Night.Game)})
+                end
+            end
+        end
+    end), {TargetHudData.Connections})
+    setmetatable(TargetHudData, {__index = TargetHudData.Functions})
+    if UIData.TargetHud then UIData.TargetHud:Destroy() end
+    UIData.TargetHud = TargetHudData
+    return TargetHudData
+end
+
+function Assets.Functions:GetTargetHud(Create, Data)
+    local THUD = UIData.TargetHud
+    if not THUD and Create then THUD = Assets.Functions:CreateTargetHud(Data) end
+    return THUD
+end
+
+function Assets.Functions:DestroyTargetHud()
+    local HUD = UIData.TargetHud
+    if HUD then HUD:Destroy() end
+end
+
+Night.Load.Loaded = true
+Night.Load.Time = os.clock() - Night.Load.Start
+Night.MainWindowLoaded = true
+
+local SettingsWindow = CreateWindow({
+    Name = "Night Settings",
+    Flag = "RealSettings",
+    Size = UDim2.fromOffset(255, 470),
+    Position = UDim2.fromScale(0.14, 0.085),
+    DefaultPosition = UDim2.fromScale(0.14, 0.085),
+    Visible = true,
+    Icon = {Icon = "Settings", Size = UDim2.fromOffset(25, 25)}
+})
+
+SettingsWindow:CreateModule({
     Name = "Uninject",
     Flag = "RealUIUinject",
     Notification = false,
@@ -2027,7 +2145,7 @@ Night.MainWindow:CreateModule({
     end
 })
 
-Night.MainWindow:CreateModule({
+SettingsWindow:CreateModule({
     Name = "ReInject",
     Flag = "RealUiReInjectSetting",
     Notification = false,
@@ -2058,7 +2176,7 @@ Night.MainWindow:CreateModule({
     end
 })
 
-local NotificationSettings = Night.MainWindow:CreateModule({
+local NotificationSettings = SettingsWindow:CreateModule({
     Name = "Notifications",
     Flag = "RealUINotificationToggle",
     Notification = false,
@@ -2088,7 +2206,7 @@ NotificationSettings:Dropdown({
     CallingFunction = function(self, Value) UIData.NotificationsSettings.Alignment = Value end
 })
 
-local GUISettings = Night.MainWindow:CreateModule({
+local GUISettings = SettingsWindow:CreateModule({
     Name = "GUI",
     Flag = "RealGUISettings",
     SaveConfig = false,
@@ -2179,7 +2297,7 @@ local ScaleSlider = GUISettings:Slider({
     end
 })
 
-Night.MainWindow:CreateModule({
+SettingsWindow:CreateModule({
     Name = "Sort Tabs",
     Flag = "RealGUISortTabsSetting",
     SaveConfig = false,
@@ -2198,7 +2316,7 @@ Night.MainWindow:CreateModule({
     end
 })
 
-local ArrayListSetting = Night.MainWindow:CreateModule({
+local ArrayListSetting = SettingsWindow:CreateModule({
     Name = "Array List",
     Flag = "ArrayList",
     Default = true,
@@ -2215,9 +2333,6 @@ ArrayListSetting:ColorSlider({
     end
 })
 
--- ============================================================
--- Configs (остаётся отдельной кнопкой)
--- ============================================================
 local ConfigsButton = Night.MainWindow:MakeDashboardButton({
     Text = {Text = "Configs", Color = Color3.fromRGB(26, 95, 181)},
     Icon = {Name = "Configs", Color = Color3.fromRGB(26, 95, 181)},
@@ -2315,7 +2430,6 @@ function Assets.Functions:CreateConfigOption(Data)
     DeleteButton.ImageColor3 = Color3.fromRGB(180, 6, 9)
     DeleteButton.ImageTransparency = 0.4
     DeleteButton.ZIndex = 90
-
     function RealData.Functions:Destroy()
         for i,v in RealData.Connections do v:Disconnect() end
         UIData.ConfigButtons[RealData.Flag] = nil
