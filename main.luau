@@ -3731,7 +3731,20 @@ function Assets.Functions:CreateConfigOptions(Game: string)
     end
 end
 
-local ThemeModule = Night.MainWindow:CreateModule({
+-- ============================================================
+--  THEME EDITOR (вместо кнопок вкладок в дашборде)
+-- ============================================================
+local ThemeEditorWindow = CreateWindow({
+    Name = "Theme Editor",
+    Flag = "RealThemeEditor",
+    Size = UDim2.fromOffset(255, 470),
+    Position = UDim2.fromScale(0.006, 0.085),
+    DefaultPosition = UDim2.fromScale(0.006, 0.085),
+    Visible = true,
+    Icon = {Icon = "Settings", Size = UDim2.fromOffset(25, 25)}
+})
+
+local ThemeModule = ThemeEditorWindow:CreateModule({
     Name = "Colors",
     Flag = "ThemeColors",
     SaveConfig = true,
@@ -3848,9 +3861,31 @@ local ScaleSlider = ThemeModule:Slider({
     end
 })
 
+local SettingsDashButton = Night.MainWindow:MakeDashboardButton({
+    Text = {
+        Text = "Settings",
+        Color = Color3.fromRGB(170, 170, 170),
+    },
+    Icon = {
+        Name = "Settings",
+        Color = Color3.fromRGB(170, 170, 170),
+        OpenColor = Color3.fromRGB(210, 219, 229)
+    },
+    Window = "RealUISettings"
+})
 
+local UISettingsWindow = CreateWindow({
+    Name = "Settings",
+    Flag = "RealUISettings",
+    Size = UDim2.fromOffset(255, 470),
+    Position = UDim2.fromScale(0.006, 0.085),
+    DefaultPosition = UDim2.fromScale(0.702, 0.085),
+    Visible = false,
+    DashButton = SettingsDashButton,
+    Icon = {Icon = "Settings", Size = UDim2.fromOffset(25, 25)}
+})
 
-Night.MainWindow:CreateModule({
+UISettingsWindow:CreateModule({
     Name = "Uninject",
     Flag = "RealUIUinject",
     Notification = false,
@@ -3863,7 +3898,7 @@ Night.MainWindow:CreateModule({
     end
 })
 
-Night.MainWindow:CreateModule({
+UISettingsWindow:CreateModule({
     Name = "ReInject",
     Flag = "RealUiReInjectSetting",
     Notification = false,
@@ -3902,7 +3937,7 @@ Night.MainWindow:CreateModule({
     end
 })
 
-local NotificationSettings = Night.MainWindow:CreateModule({
+local NotificationSettings = UISettingsWindow:CreateModule({
     Name = "Notifications",
     Flag = "RealUINotificationToggle",
     Notification = false,
@@ -3940,7 +3975,7 @@ NotificationSettings:Dropdown({
     end
 })
 
-local GUISettings = Night.MainWindow:CreateModule({
+local GUISettings = UISettingsWindow:CreateModule({
     Name = "GUI",
     Flag = "RealGUISettings",
     SaveConfig = false,
@@ -3964,7 +3999,7 @@ local GUISettings = Night.MainWindow:CreateModule({
     end
 })
 
-Night.MainWindow:CreateModule({
+UISettingsWindow:CreateModule({
     Name = "Sort Tabs",
     Flag = "RealGUISortTabsSetting",
     SaveConfig = false,
@@ -3988,7 +4023,7 @@ Night.MainWindow:CreateModule({
     end
 })
 
-local ArrayListSetting = Night.MainWindow:CreateModule({
+local ArrayListSetting = UISettingsWindow:CreateModule({
     Name = "Array List",
     Flag = "ArrayList",
     Default = true,
