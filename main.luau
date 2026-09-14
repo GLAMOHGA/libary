@@ -164,7 +164,6 @@ do
         Params.Size = Size
         Params.Width = 1e9
         Params.RichText = false
-
         return TextService:GetTextBoundsAsync(Params)
     end
 
@@ -279,7 +278,6 @@ do
                         end
                     end
                 end
-
                 table.clear(ConnectionData)
             end)
         end
@@ -298,6 +296,7 @@ do
 
     Assets.Config = {}
     Assets.ArrayList = {}
+
     function Assets.Config:Save(Data: {}, Path: string, Directories: {}?): boolean
         if not Night.Load.Loaded then return end
 
@@ -314,7 +313,6 @@ do
                     end
                 end
             end
-
             writefile("NewNight/Configs/"..Path..".json", NewData)
             return true
         end
@@ -3075,13 +3073,6 @@ Night.MainWindow = CreateWindow({
 
 local NextPos = 0.01
 function Assets.Functions:CreateTab(Data: {Name: string, Flag: string, Icon: string, DefaultPosX: number?, Order: number?})
-    local DashButton = Night.MainWindow:MakeDashboardButton({
-        Text = {Text = Data.Name},
-        Top = true,
-        Window = Data.Flag,
-        Order = Data.Order
-    })
-
     local Pos = Data.DefaultPosX
     if not Pos then
         NextPos += (0.115 - ((1 - UIScale.Scale)/10) + 0.01)
@@ -3094,8 +3085,7 @@ function Assets.Functions:CreateTab(Data: {Name: string, Flag: string, Icon: str
         Size = UDim2.fromOffset(255, 470),
         Position = UDim2.fromScale(0.006, 0.085),
         DefaultPosition = UDim2.fromScale(Pos, 0.085),
-        Visible = false,
-        DashButton = DashButton,
+        Visible = true,
         Icon = {Icon = Data.Icon}
     })
 end
@@ -3741,6 +3731,136 @@ function Assets.Functions:CreateConfigOptions(Game: string)
     end
 end
 
+-- ============================================================
+--  THEME EDITOR (вместо кнопок вкладок в дашборде)
+-- ============================================================
+local ThemeEditorWindow = CreateWindow({
+    Name = "Theme Editor",
+    Flag = "RealThemeEditor",
+    Size = UDim2.fromOffset(255, 470),
+    Position = UDim2.fromScale(0.006, 0.085),
+    DefaultPosition = UDim2.fromScale(0.006, 0.085),
+    Visible = true,
+    Icon = {Icon = "Settings", Size = UDim2.fromOffset(25, 25)}
+})
+
+local ThemeModule = ThemeEditorWindow:CreateModule({
+    Name = "Colors",
+    Flag = "ThemeColors",
+    SaveConfig = true,
+    Notification = false,
+    Default = true,
+    CanBeEnabled = true,
+    CallingFunction = function() end
+})
+
+ThemeModule:ColorSlider({
+    Name = "Accent",
+    Flag = "GUIColorTheme",
+    Default = Color3.fromRGB(26, 95, 181),
+    CallingFunction = function(self, Color: Color3)
+        UIData.Theme.Other = Color
+        for i,v in UIData.CustomizableItems.Other do
+            if v.CanChange and v.Item then
+                if v.Item:IsA("Frame") or v.ChangeBackground then
+                    v.Item.BackgroundColor3 = Color
+                elseif v.Item:IsA("ImageButton") or v.Item:IsA("ImageLabel") then
+                    v.Item.ImageColor3 = Color
+                elseif v.Item:IsA("TextLabel") or v.Item:IsA("TextButton") or v.Item:IsA("TextBox") then
+                    v.Item.TextColor3 = Color
+                end
+            end
+        end
+    end
+})
+
+ThemeModule:ColorSlider({
+    Name = "Gradient Start",
+    Flag = "GUIModuleGradientColorStart",
+    Default = Color3.fromRGB(26, 95, 181),
+    CallingFunction = function(self, Color: Color3, RGB: {R: number, G: number, B: number})
+        UIData.Theme.ModuleTheme[1] = Color
+        for i,v: {Main: boolean, Gradient: UIGradient} in UIData.CustomizableItems.Modules do
+            if v.Main then
+                v.Gradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color), ColorSequenceKeypoint.new(1, UIData.Theme.ModuleTheme[2])})
+            else
+                local RGB2 = Assets.Functions:ConvertColor3toInt(UIData.Theme.ModuleTheme[2])
+                local Gradients = {
+                    [1] = {
+                        math.clamp(RGB.R - 7, 0, 255),
+                        math.clamp(RGB.G - 24, 0, 255),
+                        math.clamp(RGB.B - 46, 0, 255)
+                    },
+                    [2] = {
+                        math.clamp(RGB2.R - 5, 0, 255),
+                        math.clamp(RGB2.G - 19, 0, 255),
+                        math.clamp(RGB2.B - 37, 0, 255)
+                    }
+                }
+
+                v.Gradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(table.unpack(Gradients[1]))), ColorSequenceKeypoint.new(1, Color3.fromRGB(table.unpack(Gradients[2])))})
+                table.clear(Gradients)
+            end
+        end
+    end
+})
+
+ThemeModule:ColorSlider({
+    Name = "Gradient End",
+    Flag = "GUIModuleGradientColorEnd",
+    Default = Color3.fromRGB(21, 80, 152),
+    CallingFunction = function(self, Color: Color3, RGB: {R: number, G: number, B: number})
+        UIData.Theme.ModuleTheme[2] = Color
+        for i,v: {Main: boolean, Gradient: UIGradient} in UIData.CustomizableItems.Modules do
+            if v.Main then
+                v.Gradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, UIData.Theme.ModuleTheme[1]), ColorSequenceKeypoint.new(1, Color)})
+            else
+                local RGB1 = Assets.Functions:ConvertColor3toInt(UIData.Theme.ModuleTheme[1])
+                local Gradients = {
+                    [1] = {
+                        math.clamp(RGB1.R - 7, 0, 255),
+                        math.clamp(RGB1.G - 24, 0, 255),
+                        math.clamp(RGB1.B - 46, 0, 255)
+                    },
+                    [2] = {
+                        math.clamp(RGB.R - 5, 0, 255),
+                        math.clamp(RGB.G - 19, 0, 255),
+                        math.clamp(RGB.B - 37, 0, 255)
+                    }
+                }
+
+                v.Gradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(table.unpack(Gradients[1]))), ColorSequenceKeypoint.new(1, Color3.fromRGB(table.unpack(Gradients[2])))})
+                table.clear(Gradients)
+            end
+        end
+    end
+})
+
+ThemeModule:Slider({
+    Name = "Drag Speed",
+    Flag = "UIDragSpeed",
+    Min = 0,
+    Max = 0.3,
+    Increment = 0.01,
+    Default = 0.05,
+    CallingFunction = function(self, value: boolean)
+        UIData.Windows.DraggingSpeed = value
+    end
+})
+
+local ScaleSlider = ThemeModule:Slider({
+    Name = "Scale",
+    Flag = "GUIScaleSetting",
+    Default = Night.Scale,
+    Min = 0.4,
+    Max = 1.5,
+    Increment = 0.1,
+    CallingFunction = function(self, Value: number)
+        UIScale.Scale = Value
+        Night.Scale = Value
+    end
+})
+
 local SettingsDashButton = Night.MainWindow:MakeDashboardButton({
     Text = {
         Text = "Settings",
@@ -3876,113 +3996,6 @@ local GUISettings = UISettingsWindow:CreateModule({
         end
 
         Night.Keybind = SetValue
-    end
-})
-
-GUISettings:ColorSlider({
-    Name = "Color",
-    Flag = "GUIColorTheme",
-    Default = Color3.fromRGB(26, 95, 181),
-    CallingFunction = function(self, Color: Color3)
-        UIData.Theme.Other = Color
-        for i,v in UIData.CustomizableItems.Other do
-            if v.CanChange and v.Item then
-                if v.Item:IsA("Frame") or v.ChangeBackground then
-                    v.Item.BackgroundColor3 = Color
-                elseif v.Item:IsA("ImageButton") or v.Item:IsA("ImageLabel") then
-                    v.Item.ImageColor3 = Color
-                elseif v.Item:IsA("TextLabel") or v.Item:IsA("TextButton") or v.Item:IsA("TextBox") then
-                    v.Item.TextColor3 = Color
-                end
-            end
-        end
-    end
-})
-
-GUISettings:ColorSlider({
-    Name = "ModuleGradientStart",
-    Flag = "GUIModuleGradientColorStart",
-    Default = Color3.fromRGB(26, 95, 181),
-    CallingFunction = function(self, Color: Color3, RGB: {R: number, G: number, B: number})
-        UIData.Theme.ModuleTheme[1] = Color
-        for i,v: {Main: boolean, Gradient: UIGradient} in UIData.CustomizableItems.Modules do
-            if v.Main then
-                v.Gradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color), ColorSequenceKeypoint.new(1, UIData.Theme.ModuleTheme[2])})
-            else
-                local RGB2 = Assets.Functions:ConvertColor3toInt(UIData.Theme.ModuleTheme[2])
-                local Gradients = {
-                    [1] = {
-                        math.clamp(RGB.R - 7, 0, 255),
-                        math.clamp(RGB.G - 24, 0, 255),
-                        math.clamp(RGB.B - 46, 0, 255)
-                    },
-                    [2] = {
-                        math.clamp(RGB2.R - 5, 0, 255),
-                        math.clamp(RGB2.G - 19, 0, 255),
-                        math.clamp(RGB2.B - 37, 0, 255)
-                    }
-                }
-
-                v.Gradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(table.unpack(Gradients[1]))), ColorSequenceKeypoint.new(1, Color3.fromRGB(table.unpack(Gradients[2])))})
-                table.clear(Gradients)
-            end
-        end
-    end
-})
-
-GUISettings:ColorSlider({
-    Name = "ModuleGradientEnd",
-    Flag = "GUIModuleGradientColorEnd",
-    Default = Color3.fromRGB(21, 80, 152),
-    CallingFunction = function(self, Color: Color3, RGB: {R: number, G: number, B: number})
-        UIData.Theme.ModuleTheme[2] = Color
-        for i,v: {Main: boolean, Gradient: UIGradient} in UIData.CustomizableItems.Modules do
-            if v.Main then
-                v.Gradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, UIData.Theme.ModuleTheme[1]), ColorSequenceKeypoint.new(1, Color)})
-            else
-                local RGB1 = Assets.Functions:ConvertColor3toInt(UIData.Theme.ModuleTheme[1])
-                local Gradients = {
-                    [1] = {
-                        math.clamp(RGB1.R - 7, 0, 255),
-                        math.clamp(RGB1.G - 24, 0, 255),
-                        math.clamp(RGB1.B - 46, 0, 255)
-                    },
-                    [2] = {
-                        math.clamp(RGB.R - 5, 0, 255),
-                        math.clamp(RGB.G - 19, 0, 255),
-                        math.clamp(RGB.B - 37, 0, 255)
-                    }
-                }
-
-                v.Gradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(table.unpack(Gradients[1]))), ColorSequenceKeypoint.new(1, Color3.fromRGB(table.unpack(Gradients[2])))})
-                table.clear(Gradients)
-            end
-        end
-    end
-})
-
-GUISettings:Slider({
-    Name = "Drag Speed",
-    Flag = "UIDragSpeed",
-    Min = 0,
-    Max = 0.3,
-    Increment = 0.01,
-    Default = 0.05,
-    CallingFunction = function(self, value: boolean)
-        UIData.Windows.DraggingSpeed = value
-    end
-})
-
-local ScaleSlider = GUISettings:Slider({
-    Name = "Scale",
-    Flag = "GUIScaleSetting",
-    Default = Night.Scale,
-    Min = 0.4,
-    Max = 1.5,
-    Increment = 0.1,
-    CallingFunction = function(self, Value: number)
-        UIScale.Scale = Value
-        Night.Scale = Value
     end
 })
 
