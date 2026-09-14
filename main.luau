@@ -721,46 +721,21 @@ local function CreateWindow(Data)
             local ButtonData = {Data = Data, Selected = false, Connections = {}, Functions = {}}
             local ButtonHolder = WindowData.Dashboard.ButtonHolder
             local BottomButtonHolder = WindowData.Dashboard.BottomButtonHolder
-            if not ButtonHolder then
-                ButtonHolder = Instance.new("Frame", WindowData.Window)
-                ButtonHolder.BackgroundColor3 = Color3.fromRGB(14, 16, 23)
-                ButtonHolder.Position = UDim2.fromScale(0.067, 0.166)
-                ButtonHolder.Size = UDim2.fromOffset(221, 100)
-                Instance.new("UICorner", ButtonHolder).CornerRadius = UDim.new(0, 10)
-                local Layout = Instance.new("UIListLayout", ButtonHolder)
+            if not BottomButtonHolder then
+                BottomButtonHolder = Instance.new("Frame", WindowData.Window)
+                BottomButtonHolder.BackgroundColor3 = Color3.fromRGB(14, 16, 23)
+                BottomButtonHolder.Position = UDim2.fromScale(0.067, 0.166)
+                BottomButtonHolder.Size = UDim2.fromOffset(221, 100)
+                Instance.new("UICorner", BottomButtonHolder).CornerRadius = UDim.new(0, 10)
+                local Layout = Instance.new("UIListLayout", BottomButtonHolder)
                 Layout.FillDirection = Enum.FillDirection.Vertical
                 Layout.SortOrder = Enum.SortOrder.LayoutOrder
                 Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
                 Layout.VerticalAlignment = Enum.VerticalAlignment.Top
-                WindowData.Dashboard.ButtonHolder = ButtonHolder
-                WindowData.Dashboard.TopButtoncount = 0
-                WindowData.Dashboard.BottomButtonCount = 0
-            end
-            if not BottomButtonHolder then
-                BottomButtonHolder = Instance.new("Frame", WindowData.Window)
-                BottomButtonHolder.BackgroundColor3 = Color3.fromRGB(14, 16, 23)
-                BottomButtonHolder.Position = UDim2.fromScale(0.067, 0.749)
-                BottomButtonHolder.Size = UDim2.fromOffset(221, 100)
-                Instance.new("UICorner", BottomButtonHolder).CornerRadius = UDim.new(0, 10)
-                local Divider = Instance.new("Frame", BottomButtonHolder)
-                Divider.BackgroundColor3 = Color3.fromRGB(20, 24, 34)
-                Divider.Position = UDim2.fromScale(0.074, 0.49)
-                Divider.Size = UDim2.fromOffset(186, 1)
-                Divider.BorderSizePixel = 0
                 WindowData.Dashboard.BottomButtonHolder = BottomButtonHolder
             end
-            local FirstButton = Data.First or (Data.Top and WindowData.Dashboard.TopButtoncount == WindowData.Dashboard.NextFirstButton or not Data.Top and WindowData.Dashboard.BottomButtonCount == 0)
-            local LastButton = Data.Last or (Data.Top and WindowData.Dashboard.TopButtoncount == 4 or not Data.Top and WindowData.Dashboard.BottomButtonCount == 1)
             local ButtonPos = UDim2.fromScale(0, 0.01)
-            if not Data.Top then
-                WindowData.Dashboard.BottomButtonCount += 1
-                ButtonHolder = BottomButtonHolder
-                if LastButton then ButtonPos = UDim2.fromScale(0, 0.5) end
-            else
-                WindowData.Dashboard.TopButtoncount += 1
-                if LastButton and WindowData.Dashboard.LastLayout ~= 0 then LastButton = false end
-            end
-            local Button = Instance.new("ImageButton", ButtonHolder)
+            local Button = Instance.new("ImageButton", BottomButtonHolder)
             Button.BackgroundColor3 = UIData.Theme.Other
             Button.BackgroundTransparency = 1
             Button.Size = UDim2.fromOffset(221, 50)
@@ -768,35 +743,8 @@ local function CreateWindow(Data)
             Button.BorderSizePixel = 0
             Button.AutoButtonColor = false
             Button.Position = ButtonPos
-            if Data.Order then
-                Button.LayoutOrder = Data.Order
-                if Data.Order > WindowData.Dashboard.LastLayout then
-                    WindowData.Dashboard.LastLayout = Data.Order
-                    LastButton = true
-                    FirstButton = false
-                    WindowData.Dashboard.NextFirstButton += 1
-                end
-            end
+            if Data.Order then Button.LayoutOrder = Data.Order end
             table.insert(UIData.CustomizableItems.Other, {CanChange = true, Item = Button, ChangeBackground = true})
-            local CornerFix
-            if FirstButton or LastButton then
-                Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 12)
-                CornerFix = Instance.new("Frame", Button)
-                CornerFix.BackgroundColor3 = UIData.Theme.Other
-                CornerFix.BackgroundTransparency = 1
-                CornerFix.Position = UDim2.fromScale(0, -0.013)
-                CornerFix.Size = UDim2.fromOffset(221, 10)
-                CornerFix.BorderSizePixel = 0
-                table.insert(UIData.CustomizableItems.Other, {CanChange = true, Item = CornerFix})
-                if FirstButton then
-                    local Divider = Instance.new("Frame", Button)
-                    Divider.BackgroundColor3 = Color3.fromRGB(20, 24, 34)
-                    Divider.BorderSizePixel = 0
-                    Divider.Position = UDim2.fromScale(0.074, 1)
-                    Divider.Size = UDim2.fromOffset(186, 1)
-                    CornerFix.Position = UDim2.fromScale(0, 0.85)
-                end
-            end
             local Text = Instance.new("TextLabel", Button)
             Text.BackgroundTransparency = 1
             Text.Position = UDim2.fromScale(0.074, 0.3)
@@ -808,10 +756,6 @@ local function CreateWindow(Data)
             Text.TextXAlignment = Enum.TextXAlignment.Left
             Text.Text = Data.Text.Text
             Text.TextStrokeTransparency = 1
-            if not Data.Top then
-                Text.Position = UDim2.fromScale(0.178, 0.32)
-                Text.Size = UDim2.fromOffset(80, 18)
-            end
             if Data.CanBeChanged then table.insert(UIData.CustomizableItems.Other, {CanChange = true, Item = Text}) end
             Data.Text.Obj = Text
             local Image
@@ -832,8 +776,6 @@ local function CreateWindow(Data)
             function ButtonData.Functions:Destroy()
                 for i,v in ButtonData.Connections do v:Disconnect() end
                 Button:Destroy()
-                if Data.Top then WindowData.Dashboard.TopButtoncount -= 1
-                else WindowData.Dashboard.BottomButtonCount -= 1 end
                 if Data.Window then UIData.DashButtons[Data.Window] = nil
                 else UIData.DashButtons[Data.Text.Text] = nil end
                 table.clear(ButtonData)
@@ -847,23 +789,13 @@ local function CreateWindow(Data)
                     local TargetWindow = UIData.Windows.Windows[Data.Window]
                     if TargetWindow then TargetWindow:SetVisiblity(Toggled, SaveConfig) end
                 end
-                if Data.Top then
-                    TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundTransparency = ButtonData.Selected and 0 or 1}):Play()
-                    TweenService:Create(Text, TweenInfo.new(0.2), {TextColor3 = ButtonData.Selected and Color3.fromRGB(210, 219, 229) or Color3.fromRGB(46, 54, 76)}):Play()
-                    if CornerFix then TweenService:Create(CornerFix, TweenInfo.new(0.2), {BackgroundTransparency = ButtonData.Selected and 0 or 1}):Play() end
-                else
-                    if Data.Icon and Data.Icon.OpenColor then TweenService:Create(Image, TweenInfo.new(0.2), {ImageTransparency = ButtonData.Selected and 0 or 0.5}):Play() end
-                    if Data.Text.OpenColor then TweenService:Create(Text, TweenInfo.new(0.2), {TextColor3 = ButtonData.Selected and Data.Text.OpenColor or Data.Text.Color}):Play() end
-                end
+                if Data.Icon and Data.Icon.OpenColor then TweenService:Create(Image, TweenInfo.new(0.2), {ImageTransparency = ButtonData.Selected and 0 or 0.5}):Play() end
+                if Data.Text.OpenColor then TweenService:Create(Text, TweenInfo.new(0.2), {TextColor3 = ButtonData.Selected and Data.Text.OpenColor or Data.Text.Color}):Play() end
             end
-            if Data.Top then
-                table.insert(ButtonData.Connections, Button.MouseButton1Click:Connect(function() ButtonData.Functions.Toggle(ButtonData) end))
-            else
-                table.insert(ButtonData.Connections, Button.MouseButton1Click:Connect(function()
-                    if Data.Window then ButtonData.Functions.Toggle(ButtonData)
-                    else ButtonData.Selected = not ButtonData.Selected ButtonData.Data.Clicked(ButtonData, ButtonData.Selected) end
-                end))
-            end
+            table.insert(ButtonData.Connections, Button.MouseButton1Click:Connect(function()
+                if Data.Window then ButtonData.Functions.Toggle(ButtonData)
+                else ButtonData.Selected = not ButtonData.Selected ButtonData.Data.Clicked(ButtonData, ButtonData.Selected) end
+            end))
             if Data.Window then UIData.DashButtons[Data.Window] = ButtonData
             else UIData.DashButtons[Data.Text.Text] = ButtonData end
             setmetatable(ButtonData, {__index = ButtonData.Functions})
@@ -1947,8 +1879,12 @@ Night.MainWindow = CreateWindow({
     Dashboard = true
 })
 
+local NextTabPos = 0.14
 function Assets.Functions:CreateTab(Data)
-    local Pos = Data.DefaultPosX or 0.14
+    local Pos = Data.DefaultPosX or NextTabPos
+    if not Data.DefaultPosX then
+        NextTabPos += 0.125
+    end
     return CreateWindow({
         Name = Data.Name,
         Flag = Data.Flag,
@@ -2124,17 +2060,8 @@ Night.Load.Loaded = true
 Night.Load.Time = os.clock() - Night.Load.Start
 Night.MainWindowLoaded = true
 
-local SettingsWindow = CreateWindow({
-    Name = "Night Settings",
-    Flag = "RealSettings",
-    Size = UDim2.fromOffset(255, 470),
-    Position = UDim2.fromScale(0.14, 0.085),
-    DefaultPosition = UDim2.fromScale(0.14, 0.085),
-    Visible = true,
-    Icon = {Icon = "Settings", Size = UDim2.fromOffset(25, 25)}
-})
-
-SettingsWindow:CreateModule({
+-- Все модули настроек теперь в главном окне Night
+Night.MainWindow:CreateModule({
     Name = "Uninject",
     Flag = "RealUIUinject",
     Notification = false,
@@ -2145,7 +2072,7 @@ SettingsWindow:CreateModule({
     end
 })
 
-SettingsWindow:CreateModule({
+Night.MainWindow:CreateModule({
     Name = "ReInject",
     Flag = "RealUiReInjectSetting",
     Notification = false,
@@ -2176,7 +2103,7 @@ SettingsWindow:CreateModule({
     end
 })
 
-local NotificationSettings = SettingsWindow:CreateModule({
+local NotificationSettings = Night.MainWindow:CreateModule({
     Name = "Notifications",
     Flag = "RealUINotificationToggle",
     Notification = false,
@@ -2206,7 +2133,7 @@ NotificationSettings:Dropdown({
     CallingFunction = function(self, Value) UIData.NotificationsSettings.Alignment = Value end
 })
 
-local GUISettings = SettingsWindow:CreateModule({
+local GUISettings = Night.MainWindow:CreateModule({
     Name = "GUI",
     Flag = "RealGUISettings",
     SaveConfig = false,
@@ -2297,7 +2224,7 @@ local ScaleSlider = GUISettings:Slider({
     end
 })
 
-SettingsWindow:CreateModule({
+Night.MainWindow:CreateModule({
     Name = "Sort Tabs",
     Flag = "RealGUISortTabsSetting",
     SaveConfig = false,
@@ -2316,7 +2243,7 @@ SettingsWindow:CreateModule({
     end
 })
 
-local ArrayListSetting = SettingsWindow:CreateModule({
+local ArrayListSetting = Night.MainWindow:CreateModule({
     Name = "Array List",
     Flag = "ArrayList",
     Default = true,
